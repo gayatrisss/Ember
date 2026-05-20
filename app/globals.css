@@ -1,29 +1,10 @@
 @import "tailwindcss";
-
-@theme {
-  --color-night: #0F1510;
-  --color-evergreen: #1A241B;
-  --color-ember: #D45A20;
-  --color-smoke: #5F7A8A;
-  --color-wax: #EDE8DC;
-
-  --font-display: var(--font-fraunces);
-  --font-sans: var(--font-geist);
-  --font-mono: var(--font-geist-mono);
-}
+@import "./theme.css";
+@import "./utilities.css";
 
 body {
   background: var(--color-night);
   color: var(--color-wax);
   font-family: var(--font-sans);
   line-height: 1.7;
-}
-
-h1 {
-  font-weight: 700;
-  font-style: italic;
-  line-height: 0.8;
-  font-variation-settings: 'opsz' 96;
-  font-feature-settings: normal;
-  -webkit-font-smoothing: antialiased;
 }

@@ -1,11 +1,20 @@
+import TopNav from "@/components/landing/top-nav";
+import Hero from "@/components/landing/hero";
+import LatelyOnEmber from "@/components/landing/lately-on-ember";
+import HowItWorks from "@/components/landing/how-it-works";
+import Footer from "@/components/landing/footer";
+
 export default function Home() {
   return (
-    <div className="min-h-screen bg-night text-wax flex items-center justify-center">
-      <div className="text-center">
-        <h1 className="font-display text-6xl italic">ember.</h1>
-        <h1 className="font-display text-6xl italic">short cabin title.</h1>
-        <p>refresh less, camp more.</p>
+    <>
+      {/* TODO: sticky search header on scroll past hero */}
+      <div className="bg-night bg-page-glow">
+        <TopNav />
+        <Hero />
+        <LatelyOnEmber />
+        <HowItWorks />
       </div>
-    </div>
+      <Footer />
+    </>
   );
 }

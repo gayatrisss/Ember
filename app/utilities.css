@@ -1,0 +1,77 @@
+@layer components {
+  /* === Layout === */
+  .page-container {
+    @apply mx-auto w-full max-w-[1280px] px-gutter;
+  }
+
+  /* === Locked Figma type scale === */
+  .text-display-fraunces {
+    font-family: var(--font-display);
+    font-style: italic;
+    font-weight: 700;
+    font-size: 64px;
+    line-height: 1;
+    font-variation-settings: "opsz" 96;
+    font-feature-settings: normal;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .text-display-geist {
+    font-family: var(--font-sans);
+    font-weight: 700;
+    font-size: 64px;
+    line-height: 1;
+  }
+
+  .text-heading {
+    font-family: var(--font-sans);
+    font-weight: 600;
+    font-size: 20px;
+    line-height: 1.2;
+  }
+
+  .text-body {
+    font-family: var(--font-sans);
+    font-weight: 400;
+    font-size: 16px;
+    line-height: 1.2;
+  }
+
+  .text-label {
+    font-family: var(--font-sans);
+    font-weight: 500;
+    font-size: 12px;
+    line-height: 1.4;
+  }
+
+  .text-data {
+    font-family: var(--font-mono);
+    font-weight: 400;
+    font-size: 10px;
+    line-height: 1.5;
+  }
+
+  /* Fraunces at 40px — nav wordmark only */
+  .text-display-fraunces-nav {
+    font-family: var(--font-display);
+    font-style: italic;
+    font-weight: 700;
+    font-size: 40px;
+    line-height: 1;
+    font-variation-settings: "opsz" 96;
+    font-feature-settings: normal;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Fraunces at 24px — cabin names, step headlines */
+  .text-display-fraunces-sm {
+    font-family: var(--font-display);
+    font-style: italic;
+    font-weight: 700;
+    font-size: 24px;
+    line-height: 1.2;
+    font-variation-settings: "opsz" 96;
+    font-feature-settings: normal;
+    -webkit-font-smoothing: antialiased;
+  }
+}

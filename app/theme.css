@@ -1,0 +1,37 @@
+/*
+ * Ember design tokens — Figma values in px, readable names.
+ *
+ * Spacing: use Tailwind’s default scale in components (p-8 = 32px, py-24 = 96px, …).
+ * Only add a token when the value isn’t on that scale.
+ */
+@theme {
+  /* === Colors === */
+  --color-night: #0f1510;
+  --color-evergreen: #1a241b;
+  --color-ember: #d45a20;
+  --color-smoke: #5f7a8a;
+  --color-wax: #ede8dc;
+
+  /* === Typography === */
+  --font-display: var(--font-fraunces);
+  --font-sans: var(--font-geist);
+  --font-mono: var(--font-geist-mono);
+
+  /* === Layout (px) — not on the default Tailwind scale === */
+  --spacing-gutter: 120px;
+  --width-copy: 280px;
+  --width-copy-wide: 300px;
+  --width-sidebar: 440px;
+
+  /* === Shadows === */
+  --shadow-ember-sm: 0 0 12px rgb(212 90 32 / 0.6);
+  --shadow-ember-md: 0 0 24px -8px rgb(212 90 32 / 0.4);
+  --shadow-ember-lg: 0 0 120px -20px rgb(212 90 32 / 0.15);
+
+  /* === Backgrounds === */
+  --background-image-page-glow: radial-gradient(
+    ellipse at bottom,
+    rgb(212 90 32 / 0.22) 0%,
+    rgb(15 21 16 / 0) 60%
+  );
+}
