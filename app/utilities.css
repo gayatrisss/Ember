@@ -51,6 +51,14 @@
     line-height: 1.5;
   }
 
+  /* Calendar date numbers — Geist Medium 20px */
+  .text-calendar-date {
+    font-family: var(--font-sans);
+    font-weight: 500;
+    font-size: 20px;
+    line-height: 1;
+  }
+
   /* Fraunces at 40px — nav wordmark only */
   .text-display-fraunces-nav {
     font-family: var(--font-display);
@@ -73,5 +81,100 @@
     font-variation-settings: "opsz" 96;
     font-feature-settings: normal;
     -webkit-font-smoothing: antialiased;
+  }
+
+  /* === Field component === */
+
+  /* Label: smoke by default, ember when focused or filled */
+  .field-label {
+    color: var(--color-smoke);
+    transition: color 150ms ease;
+  }
+  .field-root:focus-within .field-label,
+  .field-root:has(input:not(:placeholder-shown)):not(:focus-within) .field-label {
+    color: var(--color-ember);
+  }
+
+  /* Base — shared layout, background, transition. No border defaults. */
+  .field-control {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px;
+    width: 100%;
+    background-color: var(--color-evergreen);
+    border: 1px solid transparent;
+    transition:
+      background-color 150ms ease,
+      border-color 150ms ease,
+      border-radius 150ms ease;
+  }
+
+  /* Underline variant — bottom border only, no rounding ever */
+  .field-control-underline {
+    border-bottom-color: color-mix(in oklch, var(--color-wax) 20%, transparent);
+  }
+  .field-control-underline:hover {
+    border-bottom-color: color-mix(in oklch, var(--color-wax) 40%, transparent);
+  }
+  .field-control-underline:focus-within {
+    border-color: transparent;
+    border-bottom-color: var(--color-ember);
+  }
+  .field-control-underline:has(input:not(:placeholder-shown)):not(:focus-within) {
+    background-color: color-mix(in oklch, var(--color-ember) 15%, transparent);
+    border-color: transparent;
+    border-bottom-color: color-mix(in oklch, var(--color-ember) 50%, transparent);
+  }
+
+  /* Outline variant — full rounded border */
+  .field-control-outline {
+    border-color: color-mix(in oklch, var(--color-wax) 20%, transparent);
+    border-radius: 8px;
+  }
+  .field-control-outline:hover {
+    border-color: color-mix(in oklch, var(--color-wax) 40%, transparent);
+  }
+  .field-control-outline:focus-within {
+    border-color: var(--color-ember);
+  }
+  .field-control-outline:has(input:not(:placeholder-shown)):not(:focus-within) {
+    background-color: color-mix(in oklch, var(--color-ember) 15%, transparent);
+    border-color: color-mix(in oklch, var(--color-ember) 50%, transparent);
+  }
+
+  /* Icon: smoke → ember on focus or filled */
+  .field-icon {
+    flex-shrink: 0;
+    color: var(--color-smoke);
+    transition: color 150ms ease;
+  }
+  .field-control:focus-within .field-icon,
+  .field-control:has(input:not(:placeholder-shown)) .field-icon {
+    color: var(--color-ember);
+  }
+
+  /* Native <input> inside the control */
+  .field-input {
+    flex: 1 1 0%;
+    min-width: 0;
+    background: transparent;
+    outline: none;
+    caret-color: var(--color-ember);
+    color: var(--color-wax);
+    font-family: var(--font-sans);
+    font-size: 16px;
+    font-weight: 400;
+    line-height: 1.2;
+    transition: color 150ms ease;
+  }
+  .field-input::placeholder {
+    color: color-mix(in oklch, var(--color-wax) 40%, transparent);
+  }
+  .field-control:focus-within .field-input {
+    color: var(--color-ember);
+  }
+  .field-control:focus-within .field-input::placeholder {
+    color: color-mix(in oklch, var(--color-ember) 50%, transparent);
   }
 }

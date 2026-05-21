@@ -9,6 +9,8 @@
   --color-night: #0f1510;
   --color-evergreen: #1a241b;
   --color-ember: #d45a20;
+  --color-ember-selected: #b24c1b;  /* 80% brightness — confirmed calendar selection */
+  --color-ember-range: #803913;     /* 50% brightness — in-range fill and hover bg */
   --color-smoke: #5f7a8a;
   --color-wax: #ede8dc;
 

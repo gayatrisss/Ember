@@ -1,8 +1,5 @@
 import type { ReactNode } from "react";
 
-export const fieldControlClassName =
-  "bg-night/60 w-full p-4 border-b border-ember";
-
 type FieldProps = {
   label: string;
   children: ReactNode;
@@ -10,9 +7,9 @@ type FieldProps = {
 
 export function Field({ label, children }: FieldProps) {
   return (
-    <div>
+    <div className="field-root">
       {children}
-      <p className="mt-2 text-data text-ember uppercase tracking-widest">{label}</p>
+      <p className="mt-2 text-data uppercase tracking-widest field-label">{label}</p>
     </div>
   );
 }
@@ -20,11 +17,24 @@ export function Field({ label, children }: FieldProps) {
 type FieldControlProps = {
   children: ReactNode;
   className?: string;
+  variant?: "underline" | "outline";
 };
 
-export function FieldControl({ children, className }: FieldControlProps) {
+export function FieldControl({
+  children,
+  className,
+  variant = "underline",
+}: FieldControlProps) {
   return (
-    <div className={[fieldControlClassName, className].filter(Boolean).join(" ")}>
+    <div
+      className={[
+        "field-control",
+        `field-control-${variant}`,
+        className,
+      ]
+        .filter(Boolean)
+        .join(" ")}
+    >
       {children}
     </div>
   );
