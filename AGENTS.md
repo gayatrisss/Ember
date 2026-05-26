@@ -195,7 +195,9 @@ import { Field, FieldControl } from "@/components/ui/field";
 6. **Import alias is `@/`.** Always use `@/components/...` and `@/app/...` — never
    relative paths like `../../`.
 
-7. **Before finishing any task, run both:**
+7. **All `console.log` calls must be prefixed with `[ember]`** — e.g. `console.log("[ember] my-component", data)`. This lets you filter the browser DevTools console to `[ember]` to see only app logs.
+
+8. **Before finishing any task, run both:**
    - `npm run lint` — ESLint with Next.js core-web-vitals + TypeScript rules
    - `npm run build` — catches type errors and Next.js build issues
    Vercel will auto-deploy on push but it's faster to fail locally.

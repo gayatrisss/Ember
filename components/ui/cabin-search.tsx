@@ -6,8 +6,26 @@ import { Loader2, Search } from "lucide-react";
 import { Command as CommandPrimitive } from "cmdk";
 import { Field } from "@/components/ui/field";
 
-type Area = { id: string; name: string };
-type Fetched = { query: string; areas: Area[] };
+type Cabin = { id: string; name: string; location: string };
+type Fetched = { query: string; cabins: Cabin[] };
+
+type RIDBFacility = {
+  FacilityID: string | number;
+  FacilityName: string;
+  ParentRecAreaName?: string;
+  FacilityDescription: string;
+};
+type RIDBRaw = { RECDATA: RIDBFacility[] };
+
+function transform(raw: RIDBRaw): Cabin[] {
+  return (raw.RECDATA ?? [])
+    .filter((f) => f.FacilityDescription.toLowerCase().includes("cabin"))
+    .map((f) => ({
+      id: String(f.FacilityID),
+      name: f.FacilityName,
+      location: f.ParentRecAreaName ?? "",
+    }));
+}
 
 export function CabinSearch() {
   const router = useRouter();
@@ -26,11 +44,13 @@ export function CabinSearch() {
     timerRef.current = setTimeout(async () => {
       setLoading(true);
       try {
-        const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`);
-        const data: { areas: Area[] } = await res.json();
-        setFetched({ query: q, areas: data.areas });
+        const res = await fetch(`/api/search-ridb?q=${encodeURIComponent(q)}`);
+        const raw: RIDBRaw = await res.json();
+        const cabins = transform(raw);
+        console.log("[ember] cabin-search", { raw, cabins });
+        setFetched({ query: q, cabins });
       } catch {
-        setFetched({ query: q, areas: [] });
+        setFetched({ query: q, cabins: [] });
       } finally {
         setLoading(false);
       }
@@ -52,8 +72,8 @@ export function CabinSearch() {
   }, []);
 
   const activeQuery = query.trim();
-  const matchedAreas = fetched?.query === activeQuery ? fetched.areas : null;
-  const hasAreas = (matchedAreas?.length ?? 0) > 0;
+  const matchedCabins = fetched?.query === activeQuery ? fetched.cabins : null;
+  const hasCabins = (matchedCabins?.length ?? 0) > 0;
   const showDropdown = open && activeQuery.length > 0;
 
   return (
@@ -109,28 +129,31 @@ export function CabinSearch() {
                   </div>
                 )}
 
-                {!loading && hasAreas && (
+                {!loading && hasCabins && (
                   <CommandPrimitive.Group>
                     <div className="px-4 pt-4 pb-1 text-data uppercase tracking-widest text-smoke">
-                      Forests &amp; Parks
+                      Cabins
                     </div>
-                    {matchedAreas!.map((area) => (
+                    {matchedCabins!.map((cabin) => (
                       <CommandPrimitive.Item
-                        key={area.id}
-                        value={`area-${area.id}`}
+                        key={cabin.id}
+                        value={`cabin-${cabin.id}`}
                         onSelect={() => {
                           setOpen(false);
-                          router.push(`/explore?area=${area.id}`);
+                          router.push(`/cabin/${cabin.id}`);
                         }}
-                        className="px-4 py-3 text-body text-wax cursor-pointer outline-none hover:bg-white/5 data-[selected]:bg-white/5"
+                        className="flex flex-col px-4 py-3 cursor-pointer outline-none hover:bg-white/5 data-[selected]:bg-white/5"
                       >
-                        {area.name}
+                        <span className="text-body text-wax">{cabin.name}</span>
+                        {cabin.location && (
+                          <span className="text-data text-smoke uppercase tracking-wider mt-0.5">{cabin.location}</span>
+                        )}
                       </CommandPrimitive.Item>
                     ))}
                   </CommandPrimitive.Group>
                 )}
 
-                {!loading && !hasAreas && matchedAreas !== null && (
+                {!loading && !hasCabins && matchedCabins !== null && (
                   <div className="py-5 text-center text-body text-wax/40">
                     No results for &ldquo;{activeQuery}&rdquo;
                   </div>
