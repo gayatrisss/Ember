@@ -8,11 +8,11 @@ export default function TopNav() {
           ember.
         </span>
         <div className="flex items-center gap-8">
-          <a href="#" className="text-body text-wax hover:text-ember flex items-center gap-2">
+          <a href="#" className="hidden md:flex text-body text-wax hover:text-ember items-center gap-2">
             <Map size={18} />
             Explore
           </a>
-          <a href="#" className="text-body text-wax hover:text-ember flex items-center gap-2">
+          <a href="#" className="hidden md:flex text-body text-wax hover:text-ember items-center gap-2">
             <Bell size={18} />
             Alerts
           </a>

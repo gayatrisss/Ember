@@ -3,7 +3,7 @@ import AlertForm from "./alert-form";
 export default function Hero() {
   return (
     <section className="page-container py-24">
-      <div className="flex gap-24 items-start">
+      <div className="flex flex-col lg:flex-row  gap-24 items-start">
         <div className="flex-1 min-w-0 pt-10">
           <h1>
             <span className="text-wax block text-display-fraunces">Refresh less,</span>
@@ -13,7 +13,7 @@ export default function Hero() {
             Every cabin on Recreation.gov, polled every 90 seconds. When one opens up for your dates, you&apos;re the first to know.
           </p>
         </div>
-        <div className="w-sidebar shrink-0">
+        <div className="w-full lg:w-sidebar lg:shrink-0">
           <AlertForm />
         </div>
       </div>

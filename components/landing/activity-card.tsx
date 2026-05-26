@@ -13,7 +13,7 @@ export default function ActivityCard({ name, location, state, meta, ago }: Props
 
   return (
     <div
-      className={`bg-evergreen rounded-xl p-6 border ${
+      className={`w-full md:w-[240px] shrink-0 bg-evergreen rounded-xl p-6 border ${
         isOpen ? "border-ember/50 shadow-ember-md" : "border-evergreen"
       }`}
     >

@@ -1,9 +1,8 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Calendar, Search } from "lucide-react";
-import { Field } from "@/components/ui/field";
-import { TextInput } from "@/components/ui/text-input";
+import { Calendar } from "lucide-react";
+import { CabinSearch } from "@/components/ui/cabin-search";
 import { CalendarInput } from "@/components/ui/calendar-input";
 
 function formatRange(checkIn: Date | null, checkOut: Date | null): string {
@@ -43,14 +42,7 @@ export default function AlertForm() {
       <span className="text-data text-wax/70 uppercase tracking-wider">SET AN ALERT</span>
 
       <div className="mt-8 space-y-6">
-        <Field label="WHERE">
-          <TextInput
-            type="text"
-            autoFocus
-            placeholder="Eg. Glacier National Park"
-            icon={<Search size={16} />}
-          />
-        </Field>
+        <CabinSearch />
 
         {/* WHEN — popover trigger */}
         <div ref={whenRef}>

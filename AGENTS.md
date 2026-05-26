@@ -93,8 +93,7 @@ All tokens live in `app/theme.css` inside `@theme {}`. Use them as Tailwind util
 | `width-copy-wide` | `300px` | Slightly wider text columns |
 | `width-sidebar` | `440px` | Sidebar / form panel width |
 
-The `.page-container` utility class (`utilities.css`) applies `max-w-6xl mx-auto px-gutter`
-and should be used on every full-width page section.
+The `.page-container` utility class (`utilities.css`) applies responsive padding (24px mobile / 48px tablet / 120px desktop) with `max-w-[1280px] mx-auto` and should be used on every full-width page section.
 
 ---
 
@@ -150,6 +149,29 @@ import { Field, FieldControl } from "@/components/ui/field";
   <SomeSelectOrCustomThing />
 </FieldControl>
 ```
+
+---
+
+## Responsive design
+
+- **Approach:** Mobile-first. Write base styles for mobile, layer breakpoint prefixes (`md:`, `lg:`) for larger screens.
+- **Breakpoints** (defined in `theme.css`):
+  - `sm`  = 500px — mobile design target 
+  - `md`  = 768px — tablet (nice to have, not primary)
+  - `lg`  = 1024px — desktop (primary design target)
+  - `xl`  = 1440px — large monitor
+- **Always think in 3 tiers:**
+  - Mobile (base styles, refined at `sm:`) — must work
+  - Desktop (`lg:`) — primary target, where most design decisions live
+  - Large monitor (`xl:`) — verify content doesn't look weird or over-stretched
+- `md`/tablet is addressed with responsive classes where it naturally falls out, but is not a required design tier.
+- When writing any component with layout, spacing, or typography, always ask: does this work at mobile (`sm`), desktop (`lg`), and large monitor (`xl`)?
+- **Gutters:** Always via `.page-container`. Never apply `px-gutter` or `px-[120px]` manually. `page-container` is responsive: 24px mobile → 48px tablet → 120px desktop.
+- **Grids:** Always start `grid-cols-1`. Add `md:grid-cols-2` or `md:grid-cols-3` as needed. Never write a grid with columns but no mobile fallback.
+- **Fixed widths:** Never use a fixed `w-[Xpx]` or token width (e.g. `w-sidebar`) without a `w-full` base. Pattern: `w-full lg:w-sidebar`.
+- **Display text:** `.text-display-fraunces` and `.text-display-geist` are already responsive (40px→64px at lg) — do not override their size with Tailwind classes.
+- **Navigation:** At mobile (below `md:`), hide secondary nav links. Only logo + primary CTA should be visible.
+- **Card carousels:** Fixed-width cards use `w-[Xpx] shrink-0` on the card and `flex gap-6 overflow-hidden` on the container. Arrow buttons scroll via `scrollBy({ left: ±(cardWidth + gap), behavior: 'smooth' })`. Never use a grid for a carousel row.
 
 ---
 

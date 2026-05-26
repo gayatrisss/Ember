@@ -1,7 +1,7 @@
 @layer components {
   /* === Layout === */
   .page-container {
-    @apply mx-auto w-full max-w-[1280px] px-gutter;
+    @apply mx-auto w-full max-w-[1280px] px-6 md:px-12 lg:px-[120px];
   }
 
   /* === Locked Figma type scale === */
@@ -9,18 +9,24 @@
     font-family: var(--font-display);
     font-style: italic;
     font-weight: 700;
-    font-size: 64px;
+    font-size: 40px;
     line-height: 1;
     font-variation-settings: "opsz" 96;
     font-feature-settings: normal;
     -webkit-font-smoothing: antialiased;
+    @media (min-width: 1024px) {
+      font-size: 64px;
+    }
   }
 
   .text-display-geist {
     font-family: var(--font-sans);
     font-weight: 700;
-    font-size: 64px;
+    font-size: 40px;
     line-height: 1;
+    @media (min-width: 1024px) {
+      font-size: 64px;
+    }
   }
 
   .text-heading {

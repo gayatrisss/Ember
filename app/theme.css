@@ -19,6 +19,10 @@
   --font-sans: var(--font-geist);
   --font-mono: var(--font-geist-mono);
 
+  /* === Breakpoints === */
+  --breakpoint-sm: 500px;   /* mobile — covers modern phones in portrait */
+  --breakpoint-xl: 1440px;  /* large monitor — above our 1280px content max */
+
   /* === Layout (px) — not on the default Tailwind scale === */
   --spacing-gutter: 120px;
   --width-copy: 280px;

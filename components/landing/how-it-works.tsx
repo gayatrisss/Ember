@@ -23,7 +23,7 @@ export default function HowItWorks() {
         <h2 className="text-display-geist text-wax text-left">
           Catch every cancellation
         </h2>
-        <div className="grid grid-cols-3 gap-6 mt-24">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-24">
           {steps.map((step) => (
             <div key={step.number}>
               <div className="text-data text-ember uppercase border-b border-ember pb-4 mb-8">

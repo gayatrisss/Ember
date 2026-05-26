@@ -1,0 +1,8 @@
+{
+  "Console Log": {
+    "prefix": "clo",
+    "scope": "javascript,typescript,javascriptreact,typescriptreact",
+    "body": ["console.log('$1', $2)$0"],
+    "description": "console.log with label and value"
+  }
+}

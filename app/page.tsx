@@ -10,9 +10,11 @@ export default function Home() {
       {/* TODO: sticky search header on scroll past hero */}
       <div className="bg-night bg-page-glow">
         <TopNav />
-        <Hero />
-        <LatelyOnEmber />
-        <HowItWorks />
+
+          <Hero />
+          <LatelyOnEmber />
+          <HowItWorks />
+
       </div>
       <Footer />
     </>
