@@ -1,11 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
+import type { SearchRawResponse } from "@/types/search";
+
+const BASE = "https://ridb.recreation.gov/api/v1";
 
 export async function GET(req: NextRequest) {
   const q = req.nextUrl.searchParams.get("q") ?? "";
-  const url = `https://ridb.recreation.gov/api/v1/facilities?query=${encodeURIComponent(q)}&limit=10&&apikey=${process.env.RIDB_API_KEY ?? ""}`;
-  console.log("[ridb] GET", url);   
-  const res = await fetch(url);
+  const key = process.env.RIDB_API_KEY ?? "";
 
-  if (!res.ok) return NextResponse.json({ RECDATA: [] });
-  return NextResponse.json(await res.json());
+  const [facilitiesRes, areasRes] = await Promise.all([
+    fetch(`${BASE}/facilities?query=${encodeURIComponent(q)}&limit=20&apikey=${key}`),
+    fetch(`${BASE}/recareas?query=${encodeURIComponent(q)}&limit=5&apikey=${key}`),
+  ]);
+
+  const [facilities, areas] = await Promise.all([
+    facilitiesRes.ok ? facilitiesRes.json() : { RECDATA: [] },
+    areasRes.ok ? areasRes.json() : { RECDATA: [] },
+  ]);
+
+  console.log('facilities', facilities);
+
+  return NextResponse.json({ facilities, areas } satisfies SearchRawResponse);
 }

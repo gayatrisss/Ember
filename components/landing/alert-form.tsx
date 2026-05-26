@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { Calendar } from "lucide-react";
-import { CabinSearch } from "@/components/ui/cabin-search";
+import { Search } from "@/components/ui/search";
 import { CalendarInput } from "@/components/ui/calendar-input";
 
 function formatRange(checkIn: Date | null, checkOut: Date | null): string {
@@ -42,7 +42,7 @@ export default function AlertForm() {
       <span className="text-data text-wax/70 uppercase tracking-wider">SET AN ALERT</span>
 
       <div className="mt-8 space-y-6">
-        <CabinSearch />
+        <Search />
 
         {/* WHEN — popover trigger */}
         <div ref={whenRef}>
