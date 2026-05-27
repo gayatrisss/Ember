@@ -12,12 +12,17 @@ export async function GET(req: NextRequest) {
     fetch(`${BASE}/recareas?query=${encodeURIComponent(q)}&limit=5&apikey=${key}`),
   ]);
 
+  if (!facilitiesRes.ok) {
+    console.error("[ember] RIDB facilities error", facilitiesRes.status, await facilitiesRes.text());
+  }
+  if (!areasRes.ok) {
+    console.error("[ember] RIDB areas error", areasRes.status, await areasRes.text());
+  }
+
   const [facilities, areas] = await Promise.all([
     facilitiesRes.ok ? facilitiesRes.json() : { RECDATA: [] },
     areasRes.ok ? areasRes.json() : { RECDATA: [] },
   ]);
-
-  console.log('facilities', facilities);
 
   return NextResponse.json({ facilities, areas } satisfies SearchRawResponse);
 }
