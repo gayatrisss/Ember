@@ -183,4 +183,10 @@
   .field-control:focus-within .field-input::placeholder {
     color: color-mix(in oklch, var(--color-ember) 50%, transparent);
   }
+
+  /* Listing page — cabin photo fades into topo strip below */
+  .topo-photo-fade {
+    mask-image: linear-gradient(to bottom, black 50%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to bottom, black 50%, transparent 100%);
+  }
 }

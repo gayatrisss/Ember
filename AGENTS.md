@@ -189,15 +189,17 @@ import { Field, FieldControl } from "@/components/ui/field";
 4. **Check `components/ui/` first.** Before writing a new input, button, badge, or any
    shared UI primitive, look there. Duplicate primitives are not acceptable.
 
-5. **`components/landing/` is for page sections only.** These are compositional, not
+5. **Use the rule of 3** When possible, use the rule of 3 and avoid creating the same UI over over. If you can extract some functionality into a component or even better a design system component which would live in `components/ui/` then do that first, rather than making really long files where we coud have used component abstraction for repeating UI. 
+
+6. **`components/landing/` is for page sections only.** These are compositional, not
    reusable. Keep logic light; pass data as props where possible.
 
-6. **Import alias is `@/`.** Always use `@/components/...` and `@/app/...` — never
+7. **Import alias is `@/`.** Always use `@/components/...` and `@/app/...` — never
    relative paths like `../../`.
 
-7. **All `console.log` calls must be prefixed with `[ember]`** — e.g. `console.log("[ember] my-component", data)`. This lets you filter the browser DevTools console to `[ember]` to see only app logs.
+8. **All `console.log` calls must be prefixed with `[ember]`** — e.g. `console.log("[ember] my-component", data)`. This lets you filter the browser DevTools console to `[ember]` to see only app logs.
 
-8. **Before finishing any task, run both:**
+9. **Before finishing any task, run both:**
    - `npm run lint` — ESLint with Next.js core-web-vitals + TypeScript rules
    - `npm run build` — catches type errors and Next.js build issues
    Vercel will auto-deploy on push but it's faster to fail locally.
