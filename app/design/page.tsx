@@ -7,6 +7,7 @@ import { TextInput } from "@/components/ui/text-input";
 import { ToggleOptions } from "@/components/ui/toggle-options";
 import { RadioOptions } from "@/components/ui/radio-options";
 import { CalendarInput } from "@/components/ui/calendar-input";
+import { DateCell, type DateCellState, type DateCellPosition } from "@/components/ui/date-cell";
 import { ConfirmationAnimations } from "@/components/ui/confirmation-animations";
 import StatusBar from "@/components/ui/status-bar";
 import { Search } from "@/components/ui/search";
@@ -188,10 +189,38 @@ export default function DesignPage() {
         </div>
       </section>
 
+      {/* Date Cell States */}
+      <section className="page-container border-b border-wax/10 py-16">
+        <SectionLabel>Date Cell States</SectionLabel>
+        <div className="bg-evergreen rounded-xl p-6">
+          <div className="flex flex-wrap gap-8">
+            {(
+              [
+                { label: "Default",  state: "default",   position: "single" },
+                { label: "Disabled", state: "disabled",  position: "single" },
+                { label: "Day",      state: "day",        position: "single" },
+                { label: "Hover",    state: "hover",      position: "single" },
+                { label: "In range", state: "in-range",   position: "single" },
+                { label: "Start",    state: "selected",   position: "start"  },
+                { label: "End",      state: "selected",   position: "end"    },
+                { label: "Selected", state: "selected",   position: "single" },
+              ] as { label: string; state: DateCellState; position: DateCellPosition }[]
+            ).map(({ label, state, position }) => (
+              <div key={label} className="flex flex-col items-center gap-2">
+                <DateCell state={state} position={position}>
+                  {state === "day" ? "Mo" : "14"}
+                </DateCell>
+                <span className="text-data text-smoke/60 uppercase tracking-widest">{label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* CalendarInput */}
       <section className="page-container border-b border-wax/10 py-16">
         <SectionLabel>CalendarInput</SectionLabel>
-        <div className="max-w-xs">
+        <div className="w-fit">
           <div className="bg-evergreen rounded-xl p-6">
             <CalendarInput
               checkIn={calIn}

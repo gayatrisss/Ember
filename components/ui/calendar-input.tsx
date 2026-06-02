@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { DateCell, type DateCellState, type DateCellPosition } from "@/components/ui/date-cell";
 
 const MONTHS = [
   "January", "February", "March", "April", "May", "June",
@@ -17,10 +18,51 @@ function sameDay(a: Date, b: Date) {
   );
 }
 
+// ─── Header ──────────────────────────────────────────────────────────────────
+
+type CalendarHeaderProps = {
+  month: number; // 0-indexed
+  year: number;
+  onPrev: () => void;
+  onNext: () => void;
+};
+
+export function CalendarHeader({ month, year, onPrev, onNext }: CalendarHeaderProps) {
+  return (
+    <div className="flex items-center justify-between mb-2">
+      <button
+        type="button"
+        onClick={onPrev}
+        className="text-wax p-2 rounded-lg hover:bg-white/5 transition-colors"
+      >
+        <ChevronLeft size={24} />
+      </button>
+      <span className="text-body text-wax">{MONTHS[month]} {year}</span>
+      <button
+        type="button"
+        onClick={onNext}
+        className="text-wax p-2 rounded-lg hover:bg-white/5 transition-colors"
+      >
+        <ChevronRight size={24} />
+      </button>
+    </div>
+  );
+}
+
+// ─── CalendarInput ───────────────────────────────────────────────────────────
+
+function toDateKey(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}T00:00:00Z`;
+}
+
 type CalendarInputProps = {
   checkIn: Date | null;
   checkOut: Date | null;
   onChange: (checkIn: Date | null, checkOut: Date | null) => void;
+  bookedDates?: Set<string>;
   initialMonth?: number;
   initialYear?: number;
 };
@@ -29,6 +71,7 @@ export function CalendarInput({
   checkIn,
   checkOut,
   onChange,
+  bookedDates,
   initialMonth = new Date().getMonth(),
   initialYear = new Date().getFullYear(),
 }: CalendarInputProps) {
@@ -57,10 +100,10 @@ export function CalendarInput({
     }
   }
 
-  // Build grid: Mon–Sun, padding with adjacent-month dates
+  // Build grid: Mon–Sun, padded with adjacent-month dates
   const first = new Date(year, month, 1);
   const last = new Date(year, month + 1, 0);
-  const startOffset = (first.getDay() + 6) % 7; // Mon=0
+  const startOffset = (first.getDay() + 6) % 7; // Mon = 0
 
   const cells: Date[] = [];
   for (let i = startOffset; i > 0; i--) cells.push(new Date(year, month, 1 - i));
@@ -68,41 +111,20 @@ export function CalendarInput({
   let overflow = 1;
   while (cells.length % 7 !== 0) cells.push(new Date(year, month + 1, overflow++));
 
-  // Derive the visual range (handles hover preview + reversed hover direction)
+  // Derive the visual range (handles hover preview + reversed drag direction)
   const effectiveEnd = checkOut ?? (checkIn && hoverDate ? hoverDate : null);
   const isReversed = !!(checkIn && effectiveEnd && effectiveEnd < checkIn);
   const visualStart = isReversed ? effectiveEnd! : checkIn;
-  const visualEnd = isReversed ? checkIn! : effectiveEnd;
+  const visualEnd   = isReversed ? checkIn!      : effectiveEnd;
 
   return (
-    <div>
-      {/* Month header */}
-      <div className="flex items-center justify-between mb-2">
-        <button
-          type="button"
-          onClick={prevMonth}
-          className="text-wax p-2 rounded-lg hover:bg-white/5 transition-colors"
-        >
-          <ChevronLeft size={24} />
-        </button>
-        <span className="text-body text-wax">
-          {MONTHS[month]} {year}
-        </span>
-        <button
-          type="button"
-          onClick={nextMonth}
-          className="text-wax p-2 rounded-lg hover:bg-white/5 transition-colors"
-        >
-          <ChevronRight size={24} />
-        </button>
-      </div>
+    <div className="w-fit mx-auto">
+      <CalendarHeader month={month} year={year} onPrev={prevMonth} onNext={nextMonth} />
 
-      {/* Day labels */}
+      {/* Day-of-week labels */}
       <div className="grid grid-cols-7 mb-2">
         {DAYS.map((d) => (
-          <div key={d} className="size-12 flex items-center justify-center text-body text-smoke">
-            {d}
-          </div>
+          <DateCell key={d} state="day">{d}</DateCell>
         ))}
       </div>
 
@@ -110,68 +132,58 @@ export function CalendarInput({
       <div className="grid grid-cols-7 gap-y-1">
         {cells.map((date, i) => {
           const inMonth = date.getMonth() === month;
-          const isStart = !!checkIn && sameDay(date, checkIn);
-          const isEnd = !!checkOut && sameDay(date, checkOut);
-          const isHoveredEnd =
-            !checkOut &&
-            !!checkIn &&
-            !!hoverDate &&
-            !sameDay(date, checkIn) &&
-            sameDay(date, hoverDate);
-          const inRange = !!(
-            visualStart &&
-            visualEnd &&
-            date > visualStart &&
-            date < visualEnd
-          );
 
-          // True when there's an active range (confirmed or hover preview, and not same-day)
-          const hasActiveRange = !!(
-            checkIn && (
-              checkOut ||
-              (hoverDate && !sameDay(hoverDate, checkIn))
-            )
-          );
-
-          // Derive background class and optional hover fallback
-          let bgClass = "";
-          let hoverBgClass = "";
-
-          if (inRange) {
-            bgClass = "bg-ember-range";
-          } else if (isStart) {
-            let rounding: string;
-            if (!hasActiveRange) rounding = "rounded-lg";
-            else if (isReversed) rounding = "rounded-r-lg";
-            else rounding = "rounded-l-lg";
-            bgClass = `bg-ember-selected ${rounding}`;
-          } else if (isEnd) {
-            bgClass = "bg-ember-selected rounded-r-lg";
-          } else if (isHoveredEnd) {
-            const rounding = isReversed ? "rounded-l-lg" : "rounded-r-lg";
-            bgClass = `bg-ember-range border-2 border-ember-selected ${rounding}`;
-          } else if (inMonth) {
-            hoverBgClass = "hover:bg-ember-range hover:rounded-lg";
+          if (!inMonth) {
+            return <DateCell key={i} state="disabled">{date.getDate()}</DateCell>;
           }
 
-          const textColor = inMonth ? "text-wax" : "text-wax/20";
+          const isBooked = bookedDates?.has(toDateKey(date)) ?? false;
+          const isStart = !!checkIn && sameDay(date, checkIn);
+          const isEnd   = !!checkOut && sameDay(date, checkOut);
+          const isHoveredEnd =
+            !checkOut && !!checkIn && !!hoverDate &&
+            !sameDay(date, checkIn) && sameDay(date, hoverDate);
+          const inRange = !!(
+            visualStart && visualEnd &&
+            date > visualStart && date < visualEnd
+          );
+          const hasActiveRange = !!(
+            checkIn && (checkOut || (hoverDate && !sameDay(hoverDate, checkIn)))
+          );
+
+          // Map booleans → DateCell state + position
+          // isStart/isEnd take priority so a selected booked date still shows as selected
+          let cellState: DateCellState;
+          let cellPosition: DateCellPosition = "single";
+
+          if (inRange) {
+            cellState = "in-range";
+          } else if (isStart) {
+            cellState = "selected";
+            if (hasActiveRange) cellPosition = isReversed ? "end" : "start";
+          } else if (isEnd) {
+            cellState = "selected";
+            cellPosition = "end";
+          } else if (isHoveredEnd) {
+            cellState = "hover";
+            cellPosition = isReversed ? "start" : "end";
+          } else if (isBooked) {
+            cellState = "disabled";
+          } else {
+            cellState = "default";
+          }
 
           return (
-            <button
+            <DateCell
               key={i}
-              type="button"
-              onMouseEnter={() => inMonth && setHoverDate(date)}
+              state={cellState}
+              position={cellPosition}
+              onMouseEnter={() => setHoverDate(date)}
               onMouseLeave={() => setHoverDate(null)}
               onClick={() => handleSelect(date)}
-              className={[
-                "size-12 flex items-center justify-center text-body select-none cursor-pointer transition-colors",
-                bgClass,
-                hoverBgClass,
-                textColor,
-              ].filter(Boolean).join(" ")}
             >
               {date.getDate()}
-            </button>
+            </DateCell>
           );
         })}
       </div>

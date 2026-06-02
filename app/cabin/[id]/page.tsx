@@ -5,6 +5,7 @@ import StatusBar from "@/components/ui/status-bar"
 import CabinHeader from "@/components/listing/cabin-header"
 import TopoImage from "@/components/listing/topo-image"
 import FieldNotes from "@/components/listing/field-notes"
+import { AvailabilityPanel } from "@/components/listing/availability-panel"
 import type { Cabin, CabinImage } from "@/types/cabin"
 
 type Params = { id: string }
@@ -40,13 +41,7 @@ export default async function CabinPage({ params }: { params: Promise<Params> })
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
           <TopoImage images={images ?? []} name={cabin.facility_name} />
 
-          {/* Wizard placeholder — availability coming in a future pass */}
-          <div className="bg-evergreen rounded-2xl flex flex-col items-center justify-center gap-3 min-h-80 lg:min-h-0">
-            <p className="text-heading text-wax/40">Availability</p>
-            <p className="text-label text-smoke text-center max-w-48">
-              Check dates and set alerts — coming soon
-            </p>
-          </div>
+          <AvailabilityPanel facilityId={id} cabinName={cabin.facility_name} />
         </div>
 
         <FieldNotes cabin={cabin} />

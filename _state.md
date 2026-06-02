@@ -36,7 +36,7 @@ Landing page live. Supabase seeded + enriched. Listing page built. Next: polish 
 
 ## Decisions log (stable — do not re-litigate)
 - Search: Supabase + fuse.js client-side, all 519 cabins loaded on mount, opens in new tab
-- Availability: always mocked for demo — real scraping violates ToS; wizard deferred
+- Availability: live call to rec.gov's undocumented internal API (`/api/camps/availability/campground/{facilityId}/month`). Not scraping HTML — hitting the same JSON endpoint their frontend uses. **Known risk: rec.gov can change or block this endpoint at any time with no notice, which would break the wizard entirely.** Acceptable tradeoff for a portfolio demo; would need an official API or scraping fallback in production.
 - Route: `/cabin/[id]` — `id` param = `facility_id` from RIDB/Supabase
 - Auth: Supabase magic link, signup inside alert flow
 - Facility name format: title-case + preserve parentheticals as-is (e.g. "(MT)", "(AK)")
