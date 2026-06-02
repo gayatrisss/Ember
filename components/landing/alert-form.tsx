@@ -55,32 +55,32 @@ export default function AlertForm() {
                 calOpen
                   ? "border-b-ember"
                   : dateLabel
-                  ? "border-b-ember/50 bg-ember/15"
-                  : "border-b-wax/20 hover:border-b-wax/40",
+                    ? "border-b-ember/50 bg-ember/15"
+                    : "border-b-wax/20 hover:border-b-wax/40",
               ].join(" ")}
             >
               <Calendar
                 size={16}
                 className={`shrink-0 transition-colors ${calOpen || dateLabel ? "text-ember" : "text-smoke"}`}
               />
-              <span className={`flex-1 text-left text-body transition-colors ${
-                calOpen ? "text-ember" : dateLabel ? "text-wax" : "text-wax/40"
-              }`}>
+              <span
+                className={`flex-1 text-left text-body transition-colors ${
+                  calOpen ? "text-ember" : dateLabel ? "text-wax" : "text-wax/40"
+                }`}
+              >
                 {dateLabel || "Add dates"}
               </span>
             </button>
 
             {calOpen && (
               <div className="absolute left-0 right-0 top-full mt-1 z-50 bg-evergreen border border-wax/10 rounded-xl p-5">
-                <CalendarInput
-                  checkIn={checkIn}
-                  checkOut={checkOut}
-                  onChange={handleDateChange}
-                />
+                <CalendarInput checkIn={checkIn} checkOut={checkOut} onChange={handleDateChange} />
               </div>
             )}
           </div>
-          <p className={`mt-2 text-data uppercase tracking-widest transition-colors ${labelActive ? "text-ember" : "text-smoke"}`}>
+          <p
+            className={`mt-2 text-data uppercase tracking-widest transition-colors ${labelActive ? "text-ember" : "text-smoke"}`}
+          >
             WHEN
           </p>
         </div>

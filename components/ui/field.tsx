@@ -20,20 +20,10 @@ type FieldControlProps = {
   variant?: "underline" | "outline";
 };
 
-export function FieldControl({
-  children,
-  className,
-  variant = "underline",
-}: FieldControlProps) {
+export function FieldControl({ children, className, variant = "underline" }: FieldControlProps) {
   return (
     <div
-      className={[
-        "field-control",
-        `field-control-${variant}`,
-        className,
-      ]
-        .filter(Boolean)
-        .join(" ")}
+      className={["field-control", `field-control-${variant}`, className].filter(Boolean).join(" ")}
     >
       {children}
     </div>

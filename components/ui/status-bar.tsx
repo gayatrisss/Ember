@@ -1,11 +1,11 @@
 type StatusBarProps = {
-  facilityId?: string
-}
+  facilityId?: string;
+};
 
 export default function StatusBar({ facilityId }: StatusBarProps) {
   const recGovUrl = facilityId
     ? `https://www.recreation.gov/camping/campgrounds/${facilityId}`
-    : "#"
+    : "#";
 
   return (
     <div className="w-full bg-evergreen">
@@ -24,5 +24,5 @@ export default function StatusBar({ facilityId }: StatusBarProps) {
         </a>
       </div>
     </div>
-  )
+  );
 }

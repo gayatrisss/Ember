@@ -10,7 +10,8 @@ export default function Hero() {
             <span className="text-ember block text-display-geist">camp more.</span>
           </h1>
           <p className="text-body text-wax/85 mt-8 max-w-copy-wide">
-            Every cabin on Recreation.gov, polled every 90 seconds. When one opens up for your dates, you&apos;re the first to know.
+            Every cabin on Recreation.gov, polled every 90 seconds. When one opens up for your
+            dates, you&apos;re the first to know.
           </p>
         </div>
         <div className="w-full lg:w-sidebar lg:shrink-0">

@@ -1,5 +1,5 @@
-import Image from "next/image"
-import type { CabinImage } from "@/types/cabin"
+import Image from "next/image";
+import type { CabinImage } from "@/types/cabin";
 
 function TopoLines() {
   return (
@@ -20,16 +20,16 @@ function TopoLines() {
         <path d="M-10,198 C95,184 188,200 302,184 S412,170 610,194" />
       </g>
     </svg>
-  )
+  );
 }
 
 type TopoImageProps = {
-  images: CabinImage[]
-  name: string
-}
+  images: CabinImage[];
+  name: string;
+};
 
 export default function TopoImage({ images, name }: TopoImageProps) {
-  const primary = images[0] ?? null
+  const primary = images[0] ?? null;
 
   return (
     <div className="relative aspect-[3/4] bg-evergreen rounded-2xl overflow-hidden">
@@ -56,5 +56,5 @@ export default function TopoImage({ images, name }: TopoImageProps) {
       {/* Ember location pin */}
       <div className="absolute bottom-[14%] left-1/2 -translate-x-1/2 w-3 h-3 rounded-full bg-ember shadow-ember-sm" />
     </div>
-  )
+  );
 }

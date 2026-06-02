@@ -33,7 +33,9 @@ export default function ActivityCard({ name, location, state, meta, ago }: Props
 
       <p className="text-display-fraunces-sm text-wax mt-6">{name}</p>
       <p className="text-body text-wax/70 mt-1">{location}</p>
-      <p className={`text-data uppercase tracking-wider mt-6 ${isOpen ? "text-ember" : "text-wax/40"}`}>
+      <p
+        className={`text-data uppercase tracking-wider mt-6 ${isOpen ? "text-ember" : "text-wax/40"}`}
+      >
         {meta}
       </p>
     </div>

@@ -15,9 +15,7 @@ export function ToggleOptions({ options, value, onChange }: ToggleOptionsProps) 
           type="button"
           onClick={() => onChange(opt.value)}
           className={`flex-1 py-3 text-body transition-colors ${
-            value === opt.value
-              ? "bg-ember text-wax"
-              : "bg-evergreen text-wax/60 hover:text-wax"
+            value === opt.value ? "bg-ember text-wax" : "bg-evergreen text-wax/60 hover:text-wax"
           }`}
         >
           {opt.label}

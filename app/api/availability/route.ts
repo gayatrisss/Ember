@@ -29,9 +29,7 @@ export async function GET(req: NextRequest) {
     month = now.getMonth();
   }
 
-  const startDate = new Date(Date.UTC(year, month, 1))
-    .toISOString()
-    .replace(/\.\d{3}Z$/, ".000Z");
+  const startDate = new Date(Date.UTC(year, month, 1)).toISOString().replace(/\.\d{3}Z$/, ".000Z");
 
   const url = `https://www.recreation.gov/api/camps/availability/campground/${facilityId}/month?start_date=${encodeURIComponent(startDate)}`;
 
@@ -42,11 +40,13 @@ export async function GET(req: NextRequest) {
     });
 
     if (!res.ok) {
-      console.log("[ember] availability route: rec.gov returned", res.status, "for facility", facilityId);
-      return NextResponse.json(
-        { error: `Recreation.gov returned ${res.status}` },
-        { status: 502 }
+      console.log(
+        "[ember] availability route: rec.gov returned",
+        res.status,
+        "for facility",
+        facilityId
       );
+      return NextResponse.json({ error: `Recreation.gov returned ${res.status}` }, { status: 502 });
     }
 
     const data = await res.json();

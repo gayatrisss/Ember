@@ -21,13 +21,43 @@ const COLORS = [
 ];
 
 const TYPE_SCALE = [
-  { cls: "text-display-fraunces", label: "Display Fraunces", meta: "Fraunces italic 700 · 40→64px", sample: "Find your escape" },
-  { cls: "text-display-geist", label: "Display Geist", meta: "Geist 700 · 40→64px", sample: "Find your escape" },
-  { cls: "text-display-fraunces-sm", label: "Display Fraunces SM", meta: "Fraunces italic 700 · 24px", sample: "Trail Creek Cabin" },
+  {
+    cls: "text-display-fraunces",
+    label: "Display Fraunces",
+    meta: "Fraunces italic 700 · 40→64px",
+    sample: "Find your escape",
+  },
+  {
+    cls: "text-display-geist",
+    label: "Display Geist",
+    meta: "Geist 700 · 40→64px",
+    sample: "Find your escape",
+  },
+  {
+    cls: "text-display-fraunces-sm",
+    label: "Display Fraunces SM",
+    meta: "Fraunces italic 700 · 24px",
+    sample: "Trail Creek Cabin",
+  },
   { cls: "text-heading", label: "Heading", meta: "Geist 600 · 20px", sample: "How it works" },
-  { cls: "text-body", label: "Body", meta: "Geist 400 · 16px", sample: "We'll text you the moment it's available." },
-  { cls: "text-label", label: "Label", meta: "Geist 500 · 12px", sample: "Set an alert · Badges · Disclaimers" },
-  { cls: "text-data", label: "Data (Mono)", meta: "Geist Mono 400 · 10px", sample: "LAST CHECKED 47S AGO · UPPERCASE LABELS" },
+  {
+    cls: "text-body",
+    label: "Body",
+    meta: "Geist 400 · 16px",
+    sample: "We'll text you the moment it's available.",
+  },
+  {
+    cls: "text-label",
+    label: "Label",
+    meta: "Geist 500 · 12px",
+    sample: "Set an alert · Badges · Disclaimers",
+  },
+  {
+    cls: "text-data",
+    label: "Data (Mono)",
+    meta: "Geist Mono 400 · 10px",
+    sample: "LAST CHECKED 47S AGO · UPPERCASE LABELS",
+  },
 ];
 
 const SHADOWS = [
@@ -80,7 +110,10 @@ export default function DesignPage() {
         <SectionLabel>Typography</SectionLabel>
         <div className="space-y-10">
           {TYPE_SCALE.map((t) => (
-            <div key={t.cls} className="flex flex-col lg:flex-row lg:items-baseline gap-2 lg:gap-12">
+            <div
+              key={t.cls}
+              className="flex flex-col lg:flex-row lg:items-baseline gap-2 lg:gap-12"
+            >
               <div className="lg:w-48 shrink-0">
                 <p className="text-data text-smoke uppercase tracking-widest">{t.label}</p>
                 <p className="text-data text-smoke/50 mt-1">{t.meta}</p>
@@ -132,7 +165,11 @@ export default function DesignPage() {
                 <TextInput variant="outline" defaultValue="hello@ember.app" />
               </Field>
               <Field label="WITH ICON">
-                <TextInput variant="outline" icon={<Mail size={16} />} placeholder="your@email.com" />
+                <TextInput
+                  variant="outline"
+                  icon={<Mail size={16} />}
+                  placeholder="your@email.com"
+                />
               </Field>
             </div>
           </div>
@@ -168,8 +205,16 @@ export default function DesignPage() {
             <RadioOptions
               name="notification-timing"
               options={[
-                { label: "Immediately", value: "immediate", description: "Get notified the moment a spot opens." },
-                { label: "Daily digest", value: "daily", description: "One summary email each morning." },
+                {
+                  label: "Immediately",
+                  value: "immediate",
+                  description: "Get notified the moment a spot opens.",
+                },
+                {
+                  label: "Daily digest",
+                  value: "daily",
+                  description: "One summary email each morning.",
+                },
                 { label: "Weekly", value: "weekly" },
               ]}
               value={radio}
@@ -196,14 +241,14 @@ export default function DesignPage() {
           <div className="flex flex-wrap gap-8">
             {(
               [
-                { label: "Default",  state: "default",   position: "single" },
-                { label: "Disabled", state: "disabled",  position: "single" },
-                { label: "Day",      state: "day",        position: "single" },
-                { label: "Hover",    state: "hover",      position: "single" },
-                { label: "In range", state: "in-range",   position: "single" },
-                { label: "Start",    state: "selected",   position: "start"  },
-                { label: "End",      state: "selected",   position: "end"    },
-                { label: "Selected", state: "selected",   position: "single" },
+                { label: "Default", state: "default", position: "single" },
+                { label: "Disabled", state: "disabled", position: "single" },
+                { label: "Day", state: "day", position: "single" },
+                { label: "Hover", state: "hover", position: "single" },
+                { label: "In range", state: "in-range", position: "single" },
+                { label: "Start", state: "selected", position: "start" },
+                { label: "End", state: "selected", position: "end" },
+                { label: "Selected", state: "selected", position: "single" },
               ] as { label: string; state: DateCellState; position: DateCellPosition }[]
             ).map(({ label, state, position }) => (
               <div key={label} className="flex flex-col items-center gap-2">
@@ -225,7 +270,10 @@ export default function DesignPage() {
             <CalendarInput
               checkIn={calIn}
               checkOut={calOut}
-              onChange={(i, o) => { setCalIn(i); setCalOut(o); }}
+              onChange={(i, o) => {
+                setCalIn(i);
+                setCalOut(o);
+              }}
             />
           </div>
         </div>

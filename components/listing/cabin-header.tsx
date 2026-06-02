@@ -1,5 +1,5 @@
-import { confident, formatFacilityName, getCabinType, formatRate } from "@/lib/format"
-import type { Cabin } from "@/types/cabin"
+import { confident, formatFacilityName, getCabinType, formatRate } from "@/lib/format";
+import type { Cabin } from "@/types/cabin";
 
 function FactItem({ label, value }: { label: string; value: string }) {
   return (
@@ -7,12 +7,12 @@ function FactItem({ label, value }: { label: string; value: string }) {
       <span className="text-data uppercase tracking-widest text-smoke">{label}</span>
       <span className="text-body text-wax">{value}</span>
     </div>
-  )
+  );
 }
 
 export default function CabinHeader({ cabin }: { cabin: Cabin }) {
-  const name = formatFacilityName(cabin.facility_name)
-  const sleeps = confident(cabin.sleeps, cabin.sleeps_conf)
+  const name = formatFacilityName(cabin.facility_name);
+  const sleeps = confident(cabin.sleeps, cabin.sleeps_conf);
 
   return (
     <div className="flex flex-col gap-4">
@@ -31,5 +31,5 @@ export default function CabinHeader({ cabin }: { cabin: Cabin }) {
         <FactItem label="Price" value={formatRate(cabin.nightly_rate) ?? "—"} />
       </div>
     </div>
-  )
+  );
 }

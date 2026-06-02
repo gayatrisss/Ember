@@ -13,7 +13,11 @@ export async function GET(req: NextRequest) {
   ]);
 
   if (!facilitiesRes.ok) {
-    console.error("[ember] RIDB facilities error", facilitiesRes.status, await facilitiesRes.text());
+    console.error(
+      "[ember] RIDB facilities error",
+      facilitiesRes.status,
+      await facilitiesRes.text()
+    );
   }
   if (!areasRes.ok) {
     console.error("[ember] RIDB areas error", areasRes.status, await areasRes.text());

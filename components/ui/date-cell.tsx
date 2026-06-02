@@ -1,9 +1,9 @@
 export type DateCellState =
-  | "default"   // normal in-month date, shows hover treatment on CSS :hover
-  | "disabled"  // out-of-month padding cell, non-interactive
-  | "day"       // Mo/Tu/We… header labels, non-interactive
-  | "hover"     // hovered end of an in-progress range
-  | "selected"  // confirmed start, end, or single selection
+  | "default" // normal in-month date, shows hover treatment on CSS :hover
+  | "disabled" // out-of-month padding cell, non-interactive
+  | "day" // Mo/Tu/We… header labels, non-interactive
+  | "hover" // hovered end of an in-progress range
+  | "selected" // confirmed start, end, or single selection
   | "in-range"; // between start and end
 
 export type DateCellPosition = "single" | "start" | "end";
@@ -22,9 +22,7 @@ const BASE = "size-12 flex items-center justify-center select-none transition-co
 
 function stateClasses(state: DateCellState, position: DateCellPosition): string {
   const rounding =
-    position === "start" ? "rounded-l-lg" :
-    position === "end"   ? "rounded-r-lg" :
-                           "rounded-lg";
+    position === "start" ? "rounded-l-lg" : position === "end" ? "rounded-r-lg" : "rounded-lg";
 
   switch (state) {
     case "default":

@@ -5,8 +5,18 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { DateCell, type DateCellState, type DateCellPosition } from "@/components/ui/date-cell";
 
 const MONTHS = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December",
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
 ];
 const DAYS = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"];
 
@@ -37,7 +47,9 @@ export function CalendarHeader({ month, year, onPrev, onNext }: CalendarHeaderPr
       >
         <ChevronLeft size={24} />
       </button>
-      <span className="text-body text-wax">{MONTHS[month]} {year}</span>
+      <span className="text-body text-wax">
+        {MONTHS[month]} {year}
+      </span>
       <button
         type="button"
         onClick={onNext}
@@ -80,12 +92,16 @@ export function CalendarInput({
   const [hoverDate, setHoverDate] = useState<Date | null>(null);
 
   function prevMonth() {
-    if (month === 0) { setYear((y) => y - 1); setMonth(11); }
-    else setMonth((m) => m - 1);
+    if (month === 0) {
+      setYear((y) => y - 1);
+      setMonth(11);
+    } else setMonth((m) => m - 1);
   }
   function nextMonth() {
-    if (month === 11) { setYear((y) => y + 1); setMonth(0); }
-    else setMonth((m) => m + 1);
+    if (month === 11) {
+      setYear((y) => y + 1);
+      setMonth(0);
+    } else setMonth((m) => m + 1);
   }
 
   function handleSelect(date: Date) {
@@ -115,7 +131,7 @@ export function CalendarInput({
   const effectiveEnd = checkOut ?? (checkIn && hoverDate ? hoverDate : null);
   const isReversed = !!(checkIn && effectiveEnd && effectiveEnd < checkIn);
   const visualStart = isReversed ? effectiveEnd! : checkIn;
-  const visualEnd   = isReversed ? checkIn!      : effectiveEnd;
+  const visualEnd = isReversed ? checkIn! : effectiveEnd;
 
   return (
     <div className="w-fit mx-auto">
@@ -124,7 +140,9 @@ export function CalendarInput({
       {/* Day-of-week labels */}
       <div className="grid grid-cols-7 mb-2">
         {DAYS.map((d) => (
-          <DateCell key={d} state="day">{d}</DateCell>
+          <DateCell key={d} state="day">
+            {d}
+          </DateCell>
         ))}
       </div>
 
@@ -134,21 +152,26 @@ export function CalendarInput({
           const inMonth = date.getMonth() === month;
 
           if (!inMonth) {
-            return <DateCell key={i} state="disabled">{date.getDate()}</DateCell>;
+            return (
+              <DateCell key={i} state="disabled">
+                {date.getDate()}
+              </DateCell>
+            );
           }
 
           const isBooked = bookedDates?.has(toDateKey(date)) ?? false;
           const isStart = !!checkIn && sameDay(date, checkIn);
-          const isEnd   = !!checkOut && sameDay(date, checkOut);
+          const isEnd = !!checkOut && sameDay(date, checkOut);
           const isHoveredEnd =
-            !checkOut && !!checkIn && !!hoverDate &&
-            !sameDay(date, checkIn) && sameDay(date, hoverDate);
-          const inRange = !!(
-            visualStart && visualEnd &&
-            date > visualStart && date < visualEnd
-          );
+            !checkOut &&
+            !!checkIn &&
+            !!hoverDate &&
+            !sameDay(date, checkIn) &&
+            sameDay(date, hoverDate);
+          const inRange = !!(visualStart && visualEnd && date > visualStart && date < visualEnd);
           const hasActiveRange = !!(
-            checkIn && (checkOut || (hoverDate && !sameDay(hoverDate, checkIn)))
+            checkIn &&
+            (checkOut || (hoverDate && !sameDay(hoverDate, checkIn)))
           );
 
           // Map booleans → DateCell state + position

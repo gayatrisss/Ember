@@ -60,8 +60,7 @@ export function Search() {
   }, []);
 
   const q = query.trim();
-  const allResults: Cabin[] =
-    fuse && q.length >= 2 ? fuse.search(q).map((r) => r.item) : [];
+  const allResults: Cabin[] = fuse && q.length >= 2 ? fuse.search(q).map((r) => r.item) : [];
 
   // When q changes, count resets to PAGE automatically
   const visibleCount = page.q === q ? page.count : PAGE;
@@ -92,8 +91,8 @@ export function Search() {
               open
                 ? "border-b-ember"
                 : query
-                ? "border-b-ember/50 bg-ember/15"
-                : "border-b-wax/20 hover:border-b-wax/40",
+                  ? "border-b-ember/50 bg-ember/15"
+                  : "border-b-wax/20 hover:border-b-wax/40",
             ].join(" ")}
           >
             {!fuse ? (
@@ -110,11 +109,7 @@ export function Search() {
               onFocus={() => setOpen(true)}
               placeholder="Eg. Lost Horse Cabin"
               className={`flex-1 min-w-0 bg-transparent outline-none caret-ember text-body transition-colors ${
-                open
-                  ? "text-ember placeholder:text-ember/50"
-                  : query
-                  ? "text-wax"
-                  : "text-wax/40"
+                open ? "text-ember placeholder:text-ember/50" : query ? "text-wax" : "text-wax/40"
               }`}
             />
           </div>
@@ -126,9 +121,7 @@ export function Search() {
             >
               <CommandPrimitive.List>
                 {q.length === 1 && (
-                  <div className="py-5 text-center text-body text-wax/40">
-                    Keep typing…
-                  </div>
+                  <div className="py-5 text-center text-body text-wax/40">Keep typing…</div>
                 )}
 
                 {q.length >= 2 && visibleResults.length > 0 && (

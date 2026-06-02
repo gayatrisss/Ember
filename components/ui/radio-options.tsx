@@ -21,20 +21,14 @@ export function RadioOptions({ name, options, value, onChange }: RadioOptionsPro
         >
           <div
             className={`mt-1 w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${
-              value === opt.value
-                ? "border-ember"
-                : "border-wax/30 group-hover:border-wax/60"
+              value === opt.value ? "border-ember" : "border-wax/30 group-hover:border-wax/60"
             }`}
           >
-            {value === opt.value && (
-              <div className="w-2 h-2 rounded-full bg-ember" />
-            )}
+            {value === opt.value && <div className="w-2 h-2 rounded-full bg-ember" />}
           </div>
           <div>
             <p className="text-body text-wax">{opt.label}</p>
-            {opt.description && (
-              <p className="text-label text-wax/60 mt-1">{opt.description}</p>
-            )}
+            {opt.description && <p className="text-label text-wax/60 mt-1">{opt.description}</p>}
           </div>
         </button>
       ))}
