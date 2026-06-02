@@ -120,16 +120,6 @@ Fraunces is **display-tier only** — never use it for body text or labels.
 
 Check this before building anything new.
 
-### `<Input />`
-`components/ui/input.tsx`
-A styled `<input>` element. Inherits `fieldControlClassName` from `field.tsx`.
-Applies: `bg-night/60 w-full p-4 border-b border-ember outline-none text-body text-wax caret-ember`
-
-```tsx
-import { Input } from "@/components/ui/input";
-<Input type="email" placeholder="your@email.com" />
-```
-
 ### `<Field />` and `<FieldControl />`
 `components/ui/field.tsx`
 `Field` wraps a control + label below it (Ember's inverted label pattern — label sits
@@ -203,3 +193,9 @@ import { Field, FieldControl } from "@/components/ui/field";
    - `npm run lint` — ESLint with Next.js core-web-vitals + TypeScript rules
    - `npm run build` — catches type errors and Next.js build issues
    Vercel will auto-deploy on push but it's faster to fail locally.
+
+10. **Delete code that is no longer used.** When a component, file, or abstraction is
+    superseded, remove it immediately — do not leave it as a reference, fallback, or
+    "just in case." Stale code creates confusion about which version is canonical and
+    drifts out of sync with best practices. Before finishing any refactor, verify with
+    `grep` that the old file has zero importers, then delete it. One file per concept.

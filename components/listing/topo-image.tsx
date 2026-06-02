@@ -32,7 +32,7 @@ export default function TopoImage({ images, name }: TopoImageProps) {
   const primary = images[0] ?? null;
 
   return (
-    <div className="relative aspect-[3/4] bg-evergreen rounded-2xl overflow-hidden">
+    <div className="relative h-full bg-evergreen rounded-2xl overflow-hidden">
       {/* Topo strip — always visible at the bottom */}
       <div className="absolute inset-x-0 bottom-0 h-2/5 opacity-80">
         <TopoLines />
