@@ -9,7 +9,20 @@
 **Build phase — Week 3**
 Landing page live. Listing page live with real availability data. Google OAuth auth fully wired. Next: alert save to Supabase.
 
-## Last session (2026-06-02)
+## Last session (2026-06-03)
+
+### Google OAuth auth — fully wired and tested end to end
+
+- `@supabase/ssr` installed. Old `lib/supabase.ts` deleted and replaced with:
+  - `lib/supabase/server.ts` — cookie-based, async, for server components + API routes
+  - `lib/supabase/client.ts` — browser-based, for client components
+- `proxy.ts` at repo root — refreshes Supabase JWT on every request (Next.js 16 renamed `middleware.ts` → `proxy.ts`, export renamed `middleware` → `proxy`)
+- `app/auth/callback/route.ts` — exchanges OAuth `?code=` for a session cookie, redirects via `?next=` param
+- `components/ui/auth-button.tsx` — client component in nav. Shows email + "Sign out" when logged in, "Log in" (triggers Google OAuth) when logged out. Uses `onAuthStateChange` so it updates without a page reload.
+- `components/ui/availability-panel.tsx` — "Set up an alert" / "Set a reminder" now checks auth before proceeding. If not signed in, fires Google OAuth with `?next=/cabin/[id]?view=alert-setup&checkIn=...&checkOut=...`. On return, URL params are read as `useState` initializers (not in an effect) to restore panel state. URL cleaned up with `router.replace`.
+- Removed "How should we notify you?" Email/SMS toggle from alert-setup and reminder-setup — email is implicit from `auth.users.email`.
+- Supabase dashboard: added `http://localhost:3000/**` to Redirect URLs allowlist to enable local dev OAuth testing.
+- `docs/authentication.md` — written and updated with full arch explanation, flow diagram, credential notes, and connection to alert flow.
 
 ### Availability module — fully wired
 - `app/api/availability/route.ts` — server proxy to rec.gov availability endpoint (`/api/camps/availability/campground/{facilityId}/month`). Caches 5 min. Accepts `?month=YYYY-MM`.

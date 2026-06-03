@@ -132,6 +132,10 @@ export function CalendarInput({
     }
   }
 
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const pickingEndDate = !!checkIn && !checkOut;
+
   // Build grid: Mon–Sun, padded with adjacent-month dates
   const first = new Date(year, month, 1);
   const last = new Date(year, month + 1, 0);
@@ -183,6 +187,8 @@ export function CalendarInput({
           const isUnavailable =
             fetchedMonths != null && (!monthFetched || !(availableDates?.has(toDateKey(date)) ?? false));
 
+          const isPast = date < today;
+          const isBeforeStart = pickingEndDate && date < checkIn!;
           const isStart = !!checkIn && sameDay(date, checkIn);
           const isEnd = !!checkOut && sameDay(date, checkOut);
           const isHoveredEnd =
@@ -196,23 +202,24 @@ export function CalendarInput({
             checkIn && (checkOut || (hoverDate && !sameDay(hoverDate, checkIn)))
           );
 
-          // isStart/isEnd take priority so a selected unavailable date still shows as selected
           let cellState: DateCellState;
           let cellPosition: DateCellPosition = "single";
 
-          if (inRange) {
-            cellState = "in-range";
-          } else if (isStart) {
+          if (isStart) {
             cellState = "selected";
             if (hasActiveRange) cellPosition = isReversed ? "end" : "start";
           } else if (isEnd) {
             cellState = "selected";
             cellPosition = "end";
+          } else if (isPast || isBeforeStart) {
+            cellState = "disabled";
           } else if (isHoveredEnd) {
             cellState = "hover";
             cellPosition = isReversed ? "start" : "end";
+          } else if (inRange) {
+            cellState = "in-range";
           } else if (isUnavailable) {
-            cellState = "disabled";
+            cellState = "unavailable";
           } else {
             cellState = "default";
           }

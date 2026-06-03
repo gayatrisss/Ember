@@ -1,6 +1,7 @@
 export type DateCellState =
   | "default" // normal in-month date, shows hover treatment on CSS :hover
-  | "disabled" // out-of-month padding cell, non-interactive
+  | "disabled" // past date or out-of-month padding — non-interactive
+  | "unavailable" // booked or booking-not-open — visually marked but still clickable
   | "day" // Mo/Tu/We… header labels, non-interactive
   | "hover" // hovered end of an in-progress range
   | "selected" // confirmed start, end, or single selection
@@ -26,9 +27,11 @@ function stateClasses(state: DateCellState, position: DateCellPosition): string 
 
   switch (state) {
     case "default":
-      return "text-body text-wax cursor-pointer border-transparent rounded-lg hover:bg-ember-range hover:border-ember-selected";
+      return "text-body text-wax cursor-pointer border-transparent hover:bg-ember-range hover:border-ember-selected";
     case "disabled":
-      return "text-body text-smoke border-transparent rounded-lg";
+      return "text-body text-smoke border-transparent";
+    case "unavailable":
+      return "text-body text-wax/40 cursor-pointer border-transparent hover:bg-white/5";
     case "day":
       return "text-body text-smoke border-transparent";
     case "hover":
@@ -53,6 +56,24 @@ export function DateCell({
   // Non-interactive states don't need button semantics
   if (state === "day" || state === "disabled") {
     return <div className={cls}>{children}</div>;
+  }
+
+  // Dot beneath the number signals "booked or not yet open — click to set an alert"
+  if (state === "unavailable") {
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        onMouseEnter={onMouseEnter}
+        onMouseLeave={onMouseLeave}
+        className={cls}
+      >
+        <span className="flex flex-col items-center leading-none gap-0.5">
+          <span>{children}</span>
+          <span className="block w-1 h-1 rounded-full bg-smoke/60" />
+        </span>
+      </button>
+    );
   }
 
   return (
