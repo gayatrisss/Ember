@@ -14,6 +14,7 @@ Tagline: "Refresh less, camp more." Portfolio project targeting a demoable coded
 | Icons | lucide-react |
 | Database | Supabase (Postgres + Auth) |
 | Deployment | Vercel (auto-deploys on push to `main`) |
+| Formatter | Prettier (`npm run format`, format-on-save in VS Code) |
 
 ---
 
@@ -38,6 +39,7 @@ Metadata fields (each paired with a `_conf` float confidence score):
 elevation_ft   sleeps        built_year    heat_source   water_access
 restroom_type  road_access   season        electricity   firewood_provided
 waterfront     fishing_nearby pets_allowed ada_accessible
+checkin_time   checkout_time num_beds      bed_type      nightly_rate
 ```
 **Rule: only display a metadata field as a hard fact if its `_conf >= 0.8`.**
 
@@ -70,7 +72,9 @@ RIDB bulk dump (CSV)
   → scripts/seed_supabase.py  — upserts to Supabase (needs SUPABASE_SERVICE_KEY)
 ```
 
-Availability is **never stored** — it's always a live call to the rec.gov availability endpoint using `facility_id` as the campground ID. For the demo it's mocked.
+Availability is **never stored** — always a live call to the rec.gov availability endpoint:
+`/api/camps/availability/campground/{facilityId}/month?start_date=...`
+Proxied server-side via `app/api/availability/route.ts` (avoids CORS, caches 5 min).
 
 ---
 
@@ -84,6 +88,8 @@ All tokens in `app/theme.css` inside `@theme {}`. Use as Tailwind utilities.
 | `night` | `#0f1510` | Page background |
 | `evergreen` | `#1a241b` | Cards, elevated surfaces |
 | `ember` | `#d45a20` | Brand accent, CTAs |
+| `ember-selected` | `#b24c1b` | Calendar selected dates (80% brightness) |
+| `ember-range` | `#803913` | Calendar in-range / hover bg (50% brightness) |
 | `smoke` | `#5f7a8a` | Muted text |
 | `wax` | `#ede8dc` | Primary text |
 
@@ -97,9 +103,10 @@ All tokens in `app/theme.css` inside `@theme {}`. Use as Tailwind utilities.
 | `.text-body` | Body, buttons (16px 400) |
 | `.text-label` | Badges, disclaimers (12px 500) |
 | `.text-data` | Mono labels, timestamps (10px Geist Mono) |
+| `.text-calendar-date` | Active calendar date cells (20px 500) |
 
 ### Layout
-- `.page-container` — always use this for full-width sections. Responsive: 24px mobile → 48px tablet → 120px desktop, max-width 1280px.
+- `.page-container` — always use for full-width sections. Responsive: 24px mobile → 48px tablet → 120px desktop, max-width 1280px.
 - Never apply `px-gutter` or `px-[120px]` manually.
 - Grids always start `grid-cols-1`, add breakpoint columns on top.
 - Fixed widths always have a `w-full` base: `w-full lg:w-sidebar`.
@@ -112,16 +119,24 @@ All tokens in `app/theme.css` inside `@theme {}`. Use as Tailwind utilities.
 ## Component inventory
 
 ### `components/ui/` — reusable primitives
-- `input.tsx` — styled `<input>`
 - `field.tsx` — `<Field>` (label below input) + `<FieldControl>` (non-input variant)
-- `button.tsx` — CVA button with variants
-- `calendar-input.tsx` — date range picker, Mon–Sun grid, ember selection colors
+- `text-input.tsx` — styled text input with underline + outline variants
+- `button.tsx` — CVA button with variants (via @base-ui/react)
+- `calendar-input.tsx` — date range picker. Exports `CalendarInput` + `CalendarHeader`. Props: `checkIn`, `checkOut`, `onChange`, `bookedDates?`. Root is `w-fit mx-auto`.
+- `date-cell.tsx` — calendar cell primitive. States: `default`, `disabled`, `day`, `hover`, `selected`, `in-range`. Positions: `single`, `start`, `end`. Used in both CalendarInput and /design.
+- `booking-panel.tsx` — shell for booking flows: `h-[600px]`, `p-9`, title + `flex-1` content + sticky CTA slot.
+- `availability-panel.tsx` — full booking widget. Fetches rec.gov availability, shows calendar with disabled dates, three CTA states, alert/reminder wizard.
+- `spinner.tsx` — `<Spinner size={24} />` centered loading indicator.
 - `search.tsx` — search bar used in landing + search page
 - `status-bar.tsx` — "● last checked Xs ago" + rec.gov link bar
-- `toggle-options.tsx`, `radio-options.tsx`, `input-group.tsx` — form primitives
-- `dialog.tsx`, `command.tsx` — modal/command palette
+- `toggle-options.tsx`, `radio-options.tsx` — form toggle primitives
 - `confirmation-animations.tsx` — success state animations
-- `text-input.tsx`, `textarea.tsx` — text form controls
+
+### `components/listing/` — page-section components (non-reusable)
+- `cabin-header.tsx` — rec area badge + Fraunces title
+- `cabin-facts.tsx` — `<CabinFacts facts={[{label, value}]}/>`. `flex justify-between p-9`. Figma-spec stats row (Sleeps, Type, Signal, Price).
+- `topo-image.tsx` — cabin photo fading into topo SVG. Uses `h-full` — must be placed in a sized container.
+- `field-notes.tsx` — dynamic pool of 8 notes, shows best 6
 
 ### `components/landing/` — page-section components (non-reusable)
 `top-nav.tsx`, `hero.tsx`, `alert-form.tsx`, `lately-on-ember.tsx`, `activity-card.tsx`, `how-it-works.tsx`, `footer.tsx`
@@ -139,3 +154,4 @@ All tokens in `app/theme.css` inside `@theme {}`. Use as Tailwind utilities.
 5. Before finishing: `npm run lint` + `npm run build`
 6. Rule of 3 — extract repeated UI into `components/ui/` before it appears 3 times
 7. shadcn only for: Calendar, Dialog, Popover, Select, Sonner, Form — not installed yet
+8. Delete superseded files immediately — verify with `grep` that zero files import them first

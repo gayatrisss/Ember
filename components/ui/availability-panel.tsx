@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useReducer } from "react";
+import { useState, useEffect, useReducer, useRef, useMemo } from "react";
 import { BookingPanel } from "@/components/ui/booking-panel";
 import { CalendarInput } from "@/components/ui/calendar-input";
 import { ToggleOptions } from "@/components/ui/toggle-options";
@@ -34,22 +34,8 @@ function availReducer(_: AvailState, action: AvailAction): AvailState {
   }
 }
 
-function extractBookedDates(rawJson: unknown): Set<string> {
-  const result = new Set<string>();
-  if (!rawJson || typeof rawJson !== "object") return result;
-  const campsites = Object.values(
-    (rawJson as { campsites?: Record<string, CampsiteData> }).campsites ?? {}
-  );
-  if (campsites.length === 0) return result;
-  const allKeys = new Set<string>();
-  for (const c of campsites) {
-    for (const key of Object.keys(c.quantities)) allKeys.add(key);
-  }
-  for (const key of allKeys) {
-    const anyAvailable = campsites.some((c) => c.quantities[key] === 1);
-    if (!anyAvailable) result.add(key);
-  }
-  return result;
+function toMonthKey(year: number, month: number): string {
+  return `${year}-${String(month + 1).padStart(2, "0")}`;
 }
 
 function dateKey(date: Date): string {
@@ -59,14 +45,33 @@ function dateKey(date: Date): string {
   return `${y}-${m}-${d}T00:00:00Z`;
 }
 
-function getMonthParams(checkIn: Date, checkOut: Date): string[] {
+// Returns the set of "YYYY-MM" keys needed to cover a date range.
+function getMonthKeys(checkIn: Date, checkOut: Date): string[] {
   const months = new Set<string>();
   const d = new Date(checkIn);
   while (d < checkOut) {
-    months.add(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`);
+    months.add(toMonthKey(d.getFullYear(), d.getMonth()));
     d.setDate(d.getDate() + 1);
   }
   return Array.from(months);
+}
+
+// Extracts dates with quantity === 1 on ANY campsite across all cached months.
+// Only these dates are considered available — everything else defaults to unavailable.
+function extractAvailableDates(monthCache: Record<string, unknown>): Set<string> {
+  const result = new Set<string>();
+  for (const data of Object.values(monthCache)) {
+    if (!data || typeof data !== "object") continue;
+    const campsites = Object.values(
+      (data as { campsites?: Record<string, CampsiteData> }).campsites ?? {}
+    );
+    for (const campsite of campsites) {
+      for (const [key, qty] of Object.entries(campsite.quantities)) {
+        if (qty === 1) result.add(key);
+      }
+    }
+  }
+  return result;
 }
 
 function parseStatus(
@@ -105,8 +110,17 @@ function SummaryRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-function CtaButton({ onClick, href, children }: { onClick?: () => void; href?: string; children: React.ReactNode }) {
-  const cls = "block w-full bg-ember text-wax text-body px-6 py-3 rounded-lg hover:brightness-110 text-center";
+function CtaButton({
+  onClick,
+  href,
+  children,
+}: {
+  onClick?: () => void;
+  href?: string;
+  children: React.ReactNode;
+}) {
+  const cls =
+    "block w-full bg-ember text-wax text-body px-6 py-3 rounded-lg hover:brightness-110 text-center";
   if (href) {
     return (
       <a href={href} target="_blank" rel="noopener noreferrer" className={cls}>
@@ -121,7 +135,6 @@ function CtaButton({ onClick, href, children }: { onClick?: () => void; href?: s
   );
 }
 
-// Shared layout for alert-setup and reminder-setup — summary rows + two toggles + disclaimer.
 function SetupContent({
   cabinName,
   dateRange,
@@ -193,21 +206,40 @@ export function AvailabilityPanel({
   const [flexibility, setFlexibility] = useState("strict");
   const [notifyMethod, setNotifyMethod] = useState("sms");
   const [notifyWhen, setNotifyWhen] = useState("1week");
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [rawJson, setRawJson] = useState<any>(null);
-  const bookedDates = rawJson ? extractBookedDates(rawJson) : undefined;
 
-  useEffect(() => {
-    const now = new Date();
-    const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-    fetch(`/api/availability?facilityId=${facilityId}&month=${month}`)
+  // Keyed by "YYYY-MM" → raw API response. Source of truth for all availability.
+  const [monthCache, setMonthCache] = useState<Record<string, unknown>>({});
+  // Tracks in-flight requests to prevent duplicate fetches.
+  const inFlight = useRef<Set<string>>(new Set());
+
+  function fetchMonth(year: number, month: number) {
+    const key = toMonthKey(year, month);
+    if (monthCache[key] !== undefined || inFlight.current.has(key)) return;
+    inFlight.current.add(key);
+    fetch(`/api/availability?facilityId=${facilityId}&month=${key}`)
       .then((r) => (r.ok ? r.json() : null))
       .then((json) => {
-        console.log("[ember] availability-panel response", json);
-        setRawJson(json);
+        inFlight.current.delete(key);
+        if (json) {
+          console.log("[ember] availability-panel cached", key);
+          setMonthCache((prev) => ({ ...prev, [key]: json }));
+        }
       })
-      .catch((err) => console.log("[ember] availability-panel mount fetch error", err));
-  }, [facilityId]);
+      .catch((err) => {
+        inFlight.current.delete(key);
+        console.log("[ember] availability-panel fetch error", key, err);
+      });
+  }
+
+  // Fetch current month on mount.
+  useEffect(() => {
+    const now = new Date();
+    fetchMonth(now.getFullYear(), now.getMonth());
+  }, [facilityId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Derive available dates and fetched months from the cache.
+  const availableDates = useMemo(() => extractAvailableDates(monthCache), [monthCache]);
+  const fetchedMonths = useMemo(() => new Set(Object.keys(monthCache)), [monthCache]);
 
   function handleDateChange(newIn: Date | null, newOut: Date | null) {
     setCheckIn(newIn);
@@ -215,45 +247,51 @@ export function AvailabilityPanel({
     dispatch({ type: "reset" });
   }
 
+  // When the calendar navigates to a new month, fetch its data if not cached.
+  function handleMonthChange(year: number, month: number) {
+    fetchMonth(year, month);
+  }
+
+  // Re-evaluate availability whenever dates or cache change.
   useEffect(() => {
     if (!checkIn || !checkOut) return;
-    const controller = new AbortController();
-    dispatch({ type: "loading" });
-    const months = getMonthParams(checkIn, checkOut);
-    Promise.all(
-      months.map((month) =>
-        fetch(`/api/availability?facilityId=${facilityId}&month=${month}`, {
-          signal: controller.signal,
-        }).then((r) => (r.ok ? r.json() : null))
-      )
-    )
-      .then((results) => {
-        if (results.some((r) => r === null)) {
-          dispatch({ type: "error" });
-          return;
-        }
-        const merged: Record<string, CampsiteData> = {};
-        for (const data of results) {
-          for (const [id, campsite] of Object.entries(
-            (data?.campsites ?? {}) as Record<string, CampsiteData>
-          )) {
-            if (!merged[id]) merged[id] = { quantities: {} };
-            Object.assign(merged[id].quantities, campsite.quantities);
-          }
-        }
-        if (Object.keys(merged).length === 0) {
-          dispatch({ type: "error" });
-          return;
-        }
-        dispatch({ type: "success", status: parseStatus(merged, checkIn, checkOut) });
-      })
-      .catch((err) => {
-        if ((err as Error).name !== "AbortError") dispatch({ type: "error" });
-      });
-    return () => controller.abort();
-  }, [checkIn, checkOut, facilityId]);
 
-  // CTA for the calendar view — depends on avail state
+    const monthKeys = getMonthKeys(checkIn, checkOut);
+
+    // Trigger fetches for any uncached months needed by the selected range.
+    for (const key of monthKeys) {
+      const [y, m] = key.split("-").map(Number);
+      fetchMonth(y, m - 1);
+    }
+
+    // Wait until all needed months are in cache.
+    const allCached = monthKeys.every((key) => monthCache[key] !== undefined);
+    if (!allCached) {
+      dispatch({ type: "loading" });
+      return;
+    }
+
+    // Merge campsite data from the relevant cached months.
+    const merged: Record<string, CampsiteData> = {};
+    for (const key of monthKeys) {
+      const data = monthCache[key];
+      for (const [id, campsite] of Object.entries(
+        (data as { campsites?: Record<string, CampsiteData> }).campsites ?? {}
+      )) {
+        if (!merged[id]) merged[id] = { quantities: {} };
+        Object.assign(merged[id].quantities, (campsite as CampsiteData).quantities);
+      }
+    }
+
+    if (Object.keys(merged).length === 0) {
+      dispatch({ type: "error" });
+      return;
+    }
+
+    dispatch({ type: "success", status: parseStatus(merged, checkIn, checkOut) });
+  }, [checkIn, checkOut, monthCache]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ─── Derive slots from view ────────────────────────────────────────────────
   const calendarCta = (): React.ReactNode => {
     if (avail.loading)
       return (
@@ -299,7 +337,6 @@ export function AvailabilityPanel({
     return null;
   };
 
-  // ─── Derive slots from view ────────────────────────────────────────────────
   const dateRange = fmtRange(checkIn, checkOut);
   let title: string;
   let body: React.ReactNode;
@@ -373,7 +410,9 @@ export function AvailabilityPanel({
           checkIn={checkIn}
           checkOut={checkOut}
           onChange={handleDateChange}
-          bookedDates={bookedDates}
+          availableDates={availableDates}
+          fetchedMonths={fetchedMonths}
+          onMonthChange={handleMonthChange}
         />
       );
       cta = calendarCta();

@@ -70,11 +70,22 @@ function toDateKey(date: Date): string {
   return `${y}-${m}-${d}T00:00:00Z`;
 }
 
+function toMonthKey(date: Date): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+}
+
 type CalendarInputProps = {
   checkIn: Date | null;
   checkOut: Date | null;
   onChange: (checkIn: Date | null, checkOut: Date | null) => void;
-  bookedDates?: Set<string>;
+  // Dates explicitly confirmed as available (quantity === 1). Any fetched-month
+  // date absent from this set is shown as disabled.
+  availableDates?: Set<string>;
+  // Months we have fetched data for ("YYYY-MM"). Dates in unfetched months are
+  // disabled by default — we never assume availability without data.
+  fetchedMonths?: Set<string>;
+  // Called when the user navigates to a new month so the parent can fetch data.
+  onMonthChange?: (year: number, month: number) => void;
   initialMonth?: number;
   initialYear?: number;
 };
@@ -83,7 +94,9 @@ export function CalendarInput({
   checkIn,
   checkOut,
   onChange,
-  bookedDates,
+  availableDates,
+  fetchedMonths,
+  onMonthChange,
   initialMonth = new Date().getMonth(),
   initialYear = new Date().getFullYear(),
 }: CalendarInputProps) {
@@ -92,16 +105,19 @@ export function CalendarInput({
   const [hoverDate, setHoverDate] = useState<Date | null>(null);
 
   function prevMonth() {
-    if (month === 0) {
-      setYear((y) => y - 1);
-      setMonth(11);
-    } else setMonth((m) => m - 1);
+    const newMonth = month === 0 ? 11 : month - 1;
+    const newYear = month === 0 ? year - 1 : year;
+    setMonth(newMonth);
+    setYear(newYear);
+    onMonthChange?.(newYear, newMonth);
   }
+
   function nextMonth() {
-    if (month === 11) {
-      setYear((y) => y + 1);
-      setMonth(0);
-    } else setMonth((m) => m + 1);
+    const newMonth = month === 11 ? 0 : month + 1;
+    const newYear = month === 11 ? year + 1 : year;
+    setMonth(newMonth);
+    setYear(newYear);
+    onMonthChange?.(newYear, newMonth);
   }
 
   function handleSelect(date: Date) {
@@ -159,7 +175,14 @@ export function CalendarInput({
             );
           }
 
-          const isBooked = bookedDates?.has(toDateKey(date)) ?? false;
+          // A date is unavailable when:
+          //  - We have data for the month but the date isn't explicitly available, OR
+          //  - We haven't fetched the month yet (default to unavailable)
+          const mKey = toMonthKey(date);
+          const monthFetched = fetchedMonths?.has(mKey) ?? false;
+          const isUnavailable =
+            fetchedMonths != null && (!monthFetched || !(availableDates?.has(toDateKey(date)) ?? false));
+
           const isStart = !!checkIn && sameDay(date, checkIn);
           const isEnd = !!checkOut && sameDay(date, checkOut);
           const isHoveredEnd =
@@ -170,12 +193,10 @@ export function CalendarInput({
             sameDay(date, hoverDate);
           const inRange = !!(visualStart && visualEnd && date > visualStart && date < visualEnd);
           const hasActiveRange = !!(
-            checkIn &&
-            (checkOut || (hoverDate && !sameDay(hoverDate, checkIn)))
+            checkIn && (checkOut || (hoverDate && !sameDay(hoverDate, checkIn)))
           );
 
-          // Map booleans → DateCell state + position
-          // isStart/isEnd take priority so a selected booked date still shows as selected
+          // isStart/isEnd take priority so a selected unavailable date still shows as selected
           let cellState: DateCellState;
           let cellPosition: DateCellPosition = "single";
 
@@ -190,7 +211,7 @@ export function CalendarInput({
           } else if (isHoveredEnd) {
             cellState = "hover";
             cellPosition = isReversed ? "start" : "end";
-          } else if (isBooked) {
+          } else if (isUnavailable) {
             cellState = "disabled";
           } else {
             cellState = "default";
