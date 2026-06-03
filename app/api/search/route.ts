@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase/server";
 
 export async function GET(req: NextRequest) {
   const q = req.nextUrl.searchParams.get("q")?.trim() ?? "";
   if (!q) return NextResponse.json({ cabins: [] });
 
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from("cabins")
     .select("facility_id, facility_name, rec_area_name")

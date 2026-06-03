@@ -1,4 +1,5 @@
 import { Map, Bell } from "lucide-react";
+import { AuthButton } from "@/components/ui/auth-button";
 
 export default function TopNav() {
   return (
@@ -20,9 +21,7 @@ export default function TopNav() {
             <Bell size={18} />
             Alerts
           </a>
-          <button className="bg-ember text-wax rounded-lg px-6 py-3 text-body hover:brightness-110">
-            Log in
-          </button>
+          <AuthButton />
         </div>
       </div>
     </nav>

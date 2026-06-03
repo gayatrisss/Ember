@@ -7,7 +7,7 @@
 
 ## Current phase
 **Build phase — Week 3**
-Landing page live. Listing page live with real availability data. Next: listing page mobile polish, then search/map page.
+Landing page live. Listing page live with real availability data. Google OAuth auth fully wired. Next: alert save to Supabase.
 
 ## Last session (2026-06-02)
 
@@ -36,9 +36,40 @@ Landing page live. Listing page live with real availability data. Next: listing 
 - Added AGENTS.md rule #10: delete deprecated code immediately, verify with grep, one file per concept.
 
 ## Next tasks (priority order)
-1. **Listing page polish** — mobile layout review, description text, image gallery
-2. **Search / Map page** — lat/lng in Supabase, ready to drop map pins
-3. **Alert flow** — Supabase Auth magic link, insert into `alerts` table
+1. **Alert save** — wire "Confirm alert/reminder" to a server action that inserts into Supabase `alerts` table. Needs schema first (see planning notes).
+2. **Listing page polish** — mobile layout review, description text, image gallery
+3. **Search / Map page** — lat/lng in Supabase, ready to drop map pins
+
+## Alert system — planning notes (2026-06-03)
+
+### Constraints to design around
+1. **No auth yet.** Alerts are user-agnostic for the initial build. When auth is added later we'll run a migration to add a `user_id` column to `alerts` and associate records with a starter/anonymous user. Schema should be designed with this migration in mind — don't make `user_id` NOT NULL yet.
+
+2. **Deduplication.** The same person shouldn't be able to create duplicate alerts for the same cabin + date range. Need a uniqueness strategy — likely a unique constraint on `(contact, facility_id, date_from, date_to)` or similar.
+
+3. **Contact collection.** The alert form collects phone number (SMS) and/or email. These are the only identity signals we have pre-auth. `contact` on the alert row should store whichever was provided.
+
+4. **Testing strategy.** Entering higher-stakes territory than UI work. Need a plan for: unit testing the alert insert logic, integration testing the dedup constraint, and a way to verify SMS/email actually fires. Don't want to ship a broken alert product to users.
+
+### Three CTA states (all UI already built)
+1. **Available** → "Book on Recreation.gov →" (external link, nothing saved)
+2. **Booked** → "Set up an alert →" → alert-setup view (flexibility toggle + notify method) → "Confirm alert"
+3. **Not open** → "Set a reminder →" → reminder-setup view (notify-when toggle + notify method) → "Confirm reminder"
+
+### Alert vs Reminder distinction
+- **Alert** (`type: "cancellation"`): cabin is booked, user wants to know if a cancellation opens up. Has `flexibility` field (strict / ±7 days).
+- **Reminder** (`type: "reminder"`): booking window not open yet, user wants a heads-up before it opens. Has `notify_when` field (1 day / 1 week before open date).
+
+### Decisions made
+- **SMS dropped.** Email only. No Twilio, no phone OTP.
+- **Auth before alert flow.** Google OAuth via Supabase gives us a verified email, so the
+  "How should we notify you?" step on the alert panel is removed entirely.
+- **Contact input step removed.** Email comes from `auth.users.email` post-sign-in.
+
+### Open questions (tackle piece by piece)
+- Supabase function vs Next.js server action for the alert insert?
+- What testing tools/approach fits this stack?
+- Deduplication: unique constraint on `(user_id, facility_id, date_from, date_to)`?
 
 ## Decisions log (stable — do not re-litigate)
 - Search: Supabase + fuse.js client-side, all 519 cabins loaded on mount, opens in new tab

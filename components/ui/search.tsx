@@ -5,7 +5,9 @@ import { Home, Loader2, Search as SearchIcon } from "lucide-react";
 import { Command as CommandPrimitive } from "cmdk";
 import Fuse, { type IFuseOptions } from "fuse.js";
 import { Field } from "@/components/ui/field";
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase/client";
+
+const supabase = createClient();
 
 type Cabin = { id: string; name: string; area: string | null };
 

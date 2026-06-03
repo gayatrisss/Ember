@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase/server";
 import TopNav from "@/components/landing/top-nav";
 import StatusBar from "@/components/ui/status-bar";
 import CabinHeader from "@/components/listing/cabin-header";
@@ -14,6 +14,8 @@ type Params = { id: string };
 
 export default async function CabinPage({ params }: { params: Promise<Params> }) {
   const { id } = await params;
+
+  const supabase = await createClient();
 
   const [{ data: cabin }, { data: images }] = await Promise.all([
     supabase.from("cabins").select("*").eq("facility_id", id).single<Cabin>(),

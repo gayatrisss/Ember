@@ -1,10 +1,12 @@
 "use client";
 
 import { useState, useEffect, useReducer, useRef, useMemo } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { BookingPanel } from "@/components/ui/booking-panel";
 import { CalendarInput } from "@/components/ui/calendar-input";
 import { ToggleOptions } from "@/components/ui/toggle-options";
 import { Spinner } from "@/components/ui/spinner";
+import { createClient } from "@/lib/supabase/client";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -139,15 +141,11 @@ function SetupContent({
   cabinName,
   dateRange,
   firstToggle,
-  notifyMethod,
-  onNotifyChange,
   disclaimer,
 }: {
   cabinName: string;
   dateRange: string;
   firstToggle: React.ReactNode;
-  notifyMethod: string;
-  onNotifyChange: (v: string) => void;
   disclaimer: string;
 }) {
   return (
@@ -158,17 +156,6 @@ function SetupContent({
         <SummaryRow label="OTHERS WATCHING" value="3 others" />
       </div>
       {firstToggle}
-      <div>
-        <p className="text-label text-wax/60 mb-3">How should we notify you?</p>
-        <ToggleOptions
-          options={[
-            { label: "Email", value: "email" },
-            { label: "SMS", value: "sms" },
-          ]}
-          value={notifyMethod}
-          onChange={onNotifyChange}
-        />
-      </div>
       <p className="text-label text-wax/40 text-center leading-relaxed">{disclaimer}</p>
     </div>
   );
@@ -195,17 +182,58 @@ export function AvailabilityPanel({
   facilityId: string;
   cabinName: string;
 }) {
-  const [view, setView] = useState<View>("calendar");
-  const [checkIn, setCheckIn] = useState<Date | null>(null);
-  const [checkOut, setCheckOut] = useState<Date | null>(null);
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
+  // Read URL params written by handleSetupAlert before the OAuth redirect.
+  // Using them as useState initializers avoids calling setState inside an effect.
+  const viewParam = searchParams.get("view") as View | null;
+  const checkInParam = searchParams.get("checkIn");
+  const checkOutParam = searchParams.get("checkOut");
+  const restoredView: View =
+    viewParam === "alert-setup" || viewParam === "reminder-setup" ? viewParam : "calendar";
+
+  const [view, setView] = useState<View>(restoredView);
+  const [checkIn, setCheckIn] = useState<Date | null>(
+    checkInParam ? new Date(`${checkInParam}T12:00:00`) : null
+  );
+  const [checkOut, setCheckOut] = useState<Date | null>(
+    checkOutParam ? new Date(`${checkOutParam}T12:00:00`) : null
+  );
   const [avail, dispatch] = useReducer(availReducer, {
     loading: false,
     error: false,
     status: null,
   });
   const [flexibility, setFlexibility] = useState("strict");
-  const [notifyMethod, setNotifyMethod] = useState("sms");
   const [notifyWhen, setNotifyWhen] = useState("1week");
+
+  // Clean up the URL params once state has been restored from the OAuth redirect.
+  useEffect(() => {
+    if (viewParam) router.replace(`/cabin/${facilityId}`);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  async function handleSetupAlert(targetView: "alert-setup" | "reminder-setup") {
+    const supabase = createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      const checkInStr = checkIn ? checkIn.toISOString().split("T")[0] : "";
+      const checkOutStr = checkOut ? checkOut.toISOString().split("T")[0] : "";
+      const next = `/cabin/${facilityId}?view=${targetView}${checkInStr ? `&checkIn=${checkInStr}` : ""}${checkOutStr ? `&checkOut=${checkOutStr}` : ""}`;
+      await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`,
+        },
+      });
+      return;
+    }
+
+    setView(targetView);
+  }
 
   // Keyed by "YYYY-MM" → raw API response. Source of truth for all availability.
   const [monthCache, setMonthCache] = useState<Record<string, unknown>>({});
@@ -322,7 +350,7 @@ export function AvailabilityPanel({
           <p className="text-label text-wax/60 text-center mb-4">
             This cabin is booked for {fmtRange(checkIn, checkOut)}.
           </p>
-          <CtaButton onClick={() => setView("alert-setup")}>Set up an alert →</CtaButton>
+          <CtaButton onClick={() => handleSetupAlert("alert-setup")}>Set up an alert →</CtaButton>
         </>
       );
     if (avail.status === "not-open")
@@ -331,7 +359,7 @@ export function AvailabilityPanel({
           <p className="text-label text-wax/60 text-center mb-4 leading-relaxed">
             Booking isn&apos;t open yet for these dates.
           </p>
-          <CtaButton onClick={() => setView("reminder-setup")}>Set a reminder →</CtaButton>
+          <CtaButton onClick={() => handleSetupAlert("reminder-setup")}>Set a reminder →</CtaButton>
         </>
       );
     return null;
@@ -368,8 +396,6 @@ export function AvailabilityPanel({
               />
             </div>
           }
-          notifyMethod={notifyMethod}
-          onNotifyChange={setNotifyMethod}
           disclaimer="We'll monitor Recreation.gov around the clock and let you know when a cancellation occurs."
         />
       );
@@ -395,8 +421,6 @@ export function AvailabilityPanel({
               />
             </div>
           }
-          notifyMethod={notifyMethod}
-          onNotifyChange={setNotifyMethod}
           disclaimer={`We'll be sure to send you a heads up before ${cabinName} opens for booking.`}
         />
       );
