@@ -101,6 +101,13 @@ function fmtRange(a: Date | null, b: Date | null): string {
   return `${a.toLocaleDateString("en-US", opts)}–${b.toLocaleDateString("en-US", opts)}`;
 }
 
+function toDateStr(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
 // ─── Shared sub-components ───────────────────────────────────────────────────
 
 function SummaryRow({ label, value }: { label: string; value: string }) {
@@ -115,14 +122,16 @@ function SummaryRow({ label, value }: { label: string; value: string }) {
 function CtaButton({
   onClick,
   href,
+  disabled,
   children,
 }: {
   onClick?: () => void;
   href?: string;
+  disabled?: boolean;
   children: React.ReactNode;
 }) {
   const cls =
-    "block w-full bg-ember text-wax text-body px-6 py-3 rounded-lg hover:brightness-110 text-center";
+    "block w-full bg-ember text-wax text-body px-6 py-3 rounded-lg hover:brightness-110 text-center disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:brightness-100";
   if (href) {
     return (
       <a href={href} target="_blank" rel="noopener noreferrer" className={cls}>
@@ -131,7 +140,7 @@ function CtaButton({
     );
   }
   return (
-    <button onClick={onClick} className={cls}>
+    <button onClick={onClick} disabled={disabled} className={cls}>
       {children}
     </button>
   );
@@ -161,7 +170,7 @@ function SetupContent({
   );
 }
 
-function ConfirmedContent({ cabinName }: { cabinName: string }) {
+function ConfirmedContent({ cabinName, email }: { cabinName: string; email: string | null }) {
   return (
     <div className="flex flex-col items-center justify-center text-center h-full">
       <div className="text-5xl">🏕️</div>
@@ -169,6 +178,7 @@ function ConfirmedContent({ cabinName }: { cabinName: string }) {
       <p className="text-body text-wax/60 mt-3">
         We&apos;ll reach out the moment {cabinName} opens up.
       </p>
+      {email && <p className="text-label text-smoke mt-2">{email}</p>}
     </div>
   );
 }
@@ -207,6 +217,9 @@ export function AvailabilityPanel({
   });
   const [flexibility, setFlexibility] = useState("strict");
   const [notifyWhen, setNotifyWhen] = useState("1week");
+  const [confirmedEmail, setConfirmedEmail] = useState<string | null>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
   // Clean up the URL params once state has been restored from the OAuth redirect.
   useEffect(() => {
@@ -233,6 +246,46 @@ export function AvailabilityPanel({
     }
 
     setView(targetView);
+  }
+
+  async function handleConfirm(type: "cancellation" | "reminder") {
+    if (!checkIn || !checkOut) return;
+    setSubmitError(null);
+    setSubmitting(true);
+
+    const payload: Record<string, string> = {
+      facilityId,
+      type,
+      dateFrom: toDateStr(checkIn),
+      dateTo: toDateStr(checkOut),
+    };
+    if (type === "cancellation") payload.flexibility = flexibility;
+    if (type === "reminder") payload.notifyWhen = notifyWhen;
+
+    try {
+      const res = await fetch("/api/alerts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        const errorMessages: Record<string, string> = {
+          duplicate: "You're already watching this cabin for those dates.",
+          overlap: "You already have an alert covering these dates.",
+        };
+        setSubmitError(errorMessages[data.error] ?? "Something went wrong. Please try again.");
+        return;
+      }
+
+      setConfirmedEmail(data.email);
+      setView("confirmed");
+    } catch {
+      setSubmitError("Something went wrong. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   // Keyed by "YYYY-MM" → raw API response. Source of truth for all availability.
@@ -373,7 +426,7 @@ export function AvailabilityPanel({
   switch (view) {
     case "confirmed":
       title = "";
-      body = <ConfirmedContent cabinName={cabinName} />;
+      body = <ConfirmedContent cabinName={cabinName} email={confirmedEmail} />;
       cta = <CtaButton>Find more cabins</CtaButton>;
       break;
 
@@ -399,7 +452,16 @@ export function AvailabilityPanel({
           disclaimer="We'll monitor Recreation.gov around the clock and let you know when a cancellation occurs."
         />
       );
-      cta = <CtaButton onClick={() => setView("confirmed")}>Confirm alert</CtaButton>;
+      cta = (
+        <>
+          {submitError && (
+            <p className="text-label text-ember text-center mb-3">{submitError}</p>
+          )}
+          <CtaButton onClick={() => handleConfirm("cancellation")} disabled={submitting}>
+            {submitting ? "Confirming..." : "Confirm alert"}
+          </CtaButton>
+        </>
+      );
       break;
 
     case "reminder-setup":
@@ -424,7 +486,16 @@ export function AvailabilityPanel({
           disclaimer={`We'll be sure to send you a heads up before ${cabinName} opens for booking.`}
         />
       );
-      cta = <CtaButton onClick={() => setView("confirmed")}>Confirm reminder</CtaButton>;
+      cta = (
+        <>
+          {submitError && (
+            <p className="text-label text-ember text-center mb-3">{submitError}</p>
+          )}
+          <CtaButton onClick={() => handleConfirm("reminder")} disabled={submitting}>
+            {submitting ? "Confirming..." : "Confirm reminder"}
+          </CtaButton>
+        </>
+      );
       break;
 
     default: // "calendar"

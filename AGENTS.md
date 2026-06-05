@@ -199,3 +199,15 @@ import { Field, FieldControl } from "@/components/ui/field";
     "just in case." Stale code creates confusion about which version is canonical and
     drifts out of sync with best practices. Before finishing any refactor, verify with
     `grep` that the old file has zero importers, then delete it. One file per concept.
+
+11. **No nested or chained ternaries.** `a ? b : c ? d : e` is hard to read and easy
+    to misread. Use an `if/else` block, a `switch`, or a lookup object instead.
+    ESLint enforces this via `no-nested-ternary`. Example of the preferred pattern:
+    ```ts
+    // ✗ avoid
+    const rounding = position === "start" ? "rounded-l-lg" : position === "end" ? "rounded-r-lg" : "rounded-lg";
+
+    // ✓ prefer
+    const roundingMap = { start: "rounded-l-lg", end: "rounded-r-lg", single: "rounded-lg" };
+    const rounding = roundingMap[position];
+    ```

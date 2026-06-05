@@ -21,9 +21,14 @@ type DateCellProps = {
 // text-body (16px/400) for inactive cells, text-calendar-date (20px/500) for active — per Figma spec
 const BASE = "size-12 flex items-center justify-center select-none transition-colors border-2";
 
+const ROUNDING: Record<DateCellPosition, string> = {
+  start: "rounded-l-lg",
+  end: "rounded-r-lg",
+  single: "rounded-lg",
+};
+
 function stateClasses(state: DateCellState, position: DateCellPosition): string {
-  const rounding =
-    position === "start" ? "rounded-l-lg" : position === "end" ? "rounded-r-lg" : "rounded-lg";
+  const rounding = ROUNDING[position];
 
   switch (state) {
     case "default":

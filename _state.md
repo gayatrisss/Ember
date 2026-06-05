@@ -9,7 +9,28 @@
 **Build phase — Week 3**
 Landing page live. Listing page live with real availability data. Google OAuth auth fully wired. Next: alert save to Supabase.
 
-## Last session (2026-06-03)
+## Last session (2026-06-04)
+
+### Alerts architecture — decisions made
+See `docs/alerts-architecture.md` for the full write-up. Key decisions from today:
+
+- **`cabin_name` dropped** from alerts schema — a join on 500 rows is trivially cheap, no reason to denormalize.
+- **`notification_method` added** — defaults to `"email"`, nullable for future SMS. Costs nothing to add now.
+- **Unique constraint** `(user_id, facility_id, date_from, date_to)` handles exact duplicates.
+- **Overlap exclusion** — use a Postgres GiST exclusion constraint to prevent overlapping date ranges for the same user + cabin (e.g. user creates "all of July" then "week in July"). Also add frontend check for a friendly UX message before hitting the constraint.
+- **Cron job** — will use Vercel Cron (`app/api/cron/check-alerts/route.ts` running every 15 min). Schema supports it: `status = 'active'` index for efficient querying, `type`/`flexibility`/`notify_when` tell the job what to check.
+- **`active` boolean replaced by `status` text** — `"active"` | `"triggered"` | `"cancelled"`.
+
+### Local dev environment — fully set up
+- Local Supabase via Docker. Schema pulled from prod. Cabin + image data seeded via `psql`.
+- Google OAuth working locally — config in `supabase/config.toml`, secret in `.env.local`.
+- `.env.local` now points to local Supabase (production values commented out).
+- **To resume tomorrow:** open Docker Desktop → `supabase start` → `npm run dev`.
+
+### Calendar date states — fixed
+- Past dates → `disabled` (non-interactive). Dates before selected start → `disabled` when picking end date.
+- Booked/not-open dates → new `"unavailable"` state: muted text + small dot indicator, still clickable so users can select them to set alerts.
+- `no-nested-ternary` ESLint rule added. Fixed 5 violations across `date-cell.tsx`, `alert-form.tsx`, `search.tsx`.
 
 ### Google OAuth auth — fully wired and tested end to end
 
@@ -48,8 +69,21 @@ Landing page live. Listing page live with real availability data. Google OAuth a
 - Deleted 8 unused files: `listing/sidebar.tsx`, `listing/wizard.tsx`, `ui/command.tsx`, `ui/dialog.tsx`, `ui/input-group.tsx`, `ui/input.tsx`, `ui/textarea.tsx`, `listing/availability-panel.tsx` (superseded by `ui/`).
 - Added AGENTS.md rule #10: delete deprecated code immediately, verify with grep, one file per concept.
 
+## Local dev environment (set up 2026-06-04)
+- Local Supabase running via Docker at `http://127.0.0.1:54321`
+- Schema pulled from production into `supabase/migrations/20260604172415_remote_schema.sql`
+- Cabin + image data seeded locally via `psql`
+- `.env.local` points to local Supabase (production values commented out)
+- Google OAuth working locally — `http://127.0.0.1:54321/auth/v1/callback` registered in GCC
+- To resume local dev: open Docker Desktop, run `supabase start`, then `npm run dev`
+
 ## Next tasks (priority order)
-1. **Alert save** — wire "Confirm alert/reminder" to a server action that inserts into Supabase `alerts` table. Needs schema first (see planning notes).
+1. **Alert save** — three steps:
+   - Write + apply migration: add `type`, `flexibility`, `notify_when`, `notification_method`, `status` columns; drop `active`; add unique + GiST overlap constraints; add `status = 'active'` index.
+   - Build `app/actions/alerts.ts` server action.
+   - Wire "Confirm alert" + "Confirm reminder" buttons in `availability-panel.tsx`. Update confirmed view to show `auth.users.email`.
+2. **Listing page polish** — mobile layout, description text, image gallery
+3. **Search / Map page** — lat/lng ready in Supabase
 2. **Listing page polish** — mobile layout review, description text, image gallery
 3. **Search / Map page** — lat/lng in Supabase, ready to drop map pins
 

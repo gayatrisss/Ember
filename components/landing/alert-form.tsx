@@ -37,6 +37,14 @@ export default function AlertForm() {
   const dateLabel = formatRange(checkIn, checkOut);
   const labelActive = calOpen || !!(checkIn && checkOut);
 
+  let calButtonBorder = "border-b-wax/20 hover:border-b-wax/40";
+  if (dateLabel) calButtonBorder = "border-b-ember/50 bg-ember/15";
+  if (calOpen) calButtonBorder = "border-b-ember";
+
+  let calSpanText = "text-wax/40";
+  if (dateLabel) calSpanText = "text-wax";
+  if (calOpen) calSpanText = "text-ember";
+
   return (
     <div className="w-full p-8 bg-evergreen rounded-2xl shadow-ember-lg">
       <span className="text-data text-wax/70 uppercase tracking-wider">SET AN ALERT</span>
@@ -50,23 +58,14 @@ export default function AlertForm() {
             <button
               type="button"
               onClick={() => setCalOpen((o) => !o)}
-              className={[
-                "field-control cursor-pointer w-full",
-                calOpen
-                  ? "border-b-ember"
-                  : dateLabel
-                    ? "border-b-ember/50 bg-ember/15"
-                    : "border-b-wax/20 hover:border-b-wax/40",
-              ].join(" ")}
+              className={["field-control cursor-pointer w-full", calButtonBorder].join(" ")}
             >
               <Calendar
                 size={16}
                 className={`shrink-0 transition-colors ${calOpen || dateLabel ? "text-ember" : "text-smoke"}`}
               />
               <span
-                className={`flex-1 text-left text-body transition-colors ${
-                  calOpen ? "text-ember" : dateLabel ? "text-wax" : "text-wax/40"
-                }`}
+                className={`flex-1 text-left text-body transition-colors ${calSpanText}`}
               >
                 {dateLabel || "Add dates"}
               </span>

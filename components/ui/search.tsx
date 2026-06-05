@@ -37,6 +37,14 @@ export function Search() {
   const [page, setPage] = useState({ q: "", count: PAGE });
   const containerRef = useRef<HTMLDivElement>(null);
 
+  let inputBorderClass = "border-b-wax/20 hover:border-b-wax/40";
+  if (query) inputBorderClass = "border-b-ember/50 bg-ember/15";
+  if (open) inputBorderClass = "border-b-ember";
+
+  let inputTextClass = "text-wax/40";
+  if (query) inputTextClass = "text-wax";
+  if (open) inputTextClass = "text-ember placeholder:text-ember/50";
+
   useEffect(() => {
     supabase
       .from("cabins")
@@ -88,14 +96,7 @@ export function Search() {
           }}
         >
           <div
-            className={[
-              "field-control",
-              open
-                ? "border-b-ember"
-                : query
-                  ? "border-b-ember/50 bg-ember/15"
-                  : "border-b-wax/20 hover:border-b-wax/40",
-            ].join(" ")}
+            className={["field-control", inputBorderClass].join(" ")}
           >
             {!fuse ? (
               <Loader2 size={16} className="shrink-0 text-smoke animate-spin" />
@@ -110,9 +111,7 @@ export function Search() {
               onValueChange={setQuery}
               onFocus={() => setOpen(true)}
               placeholder="Eg. Lost Horse Cabin"
-              className={`flex-1 min-w-0 bg-transparent outline-none caret-ember text-body transition-colors ${
-                open ? "text-ember placeholder:text-ember/50" : query ? "text-wax" : "text-wax/40"
-              }`}
+              className={`flex-1 min-w-0 bg-transparent outline-none caret-ember text-body transition-colors ${inputTextClass}`}
             />
           </div>
 

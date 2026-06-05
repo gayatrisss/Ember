@@ -13,19 +13,63 @@ Tagline: "Refresh less, camp more." Portfolio project targeting a demoable coded
 | Styling | Tailwind CSS v4 |
 | Icons | lucide-react |
 | Database | Supabase (Postgres + Auth) |
+| Auth | Google OAuth via Supabase Auth + `@supabase/ssr` (cookie-based sessions) |
 | Deployment | Vercel (auto-deploys on push to `main`) |
 | Formatter | Prettier (`npm run format`, format-on-save in VS Code) |
 
 ---
 
-## Database — Supabase
+## Environments
 
-Project URL: `https://hbbqnptnopgrxproigux.supabase.co`
+### Local dev
+- Local Supabase via Docker at `http://127.0.0.1:54321`
+- Studio at `http://127.0.0.1:54323`
+- `.env.local` points to local Supabase (production values commented out)
+- Google OAuth works locally — `http://127.0.0.1:54321/auth/v1/callback` registered in GCC
+- **To resume:** open Docker Desktop → `supabase start` → `npm run dev`
+- Schema migrations in `supabase/migrations/`
+- To apply schema changes locally: `supabase db reset`
+- To push schema changes to production: `supabase db push`
+
+### Production
+- Supabase project: `https://hbbqnptnopgrxproigux.supabase.co`
+- Deployed to Vercel at `https://ember-five-beige.vercel.app`
+- Preview deployments use production Supabase (no separate staging DB)
+
+---
+
+## Authentication
+
+Google OAuth via Supabase Auth. Fully wired end-to-end.
+
+- **Google** = identity provider (verifies the user, issues an auth code)
+- **Supabase Auth** = session manager (exchanges code, stores user in `auth.users`, issues JWT cookie)
+- **`@supabase/ssr`** = makes the session readable on both server and client via cookies (not localStorage)
+- Session is refreshed on every request by `proxy.ts` at the repo root (Next.js 16 renamed `middleware.ts` → `proxy.ts`)
+- After Google OAuth, Supabase redirects to `app/auth/callback/route.ts` which sets the session cookie
+
+Architecture documented in `docs/authentication.md`.
+
+SMS is explicitly dropped. Email only (from `auth.users.email`). SMS may be added later with Twilio.
+
+---
+
+## Supabase clients
+
+Two clients — never use the old `lib/supabase.ts` pattern (deleted):
+
+- `lib/supabase/server.ts` — cookie-based, `async createClient()`, for server components + API routes + server actions
+- `lib/supabase/client.ts` — browser-based, `createClient()`, for client components
+
+---
+
+## Database
 
 ### `cabins` — 519 rows, public read
 Seeded from RIDB bulk data via `scripts/ingest_ridb.py` + `scripts/seed_supabase.py`.
 
-Primary key: `facility_id` (text) — the RIDB FacilityID, same ID used in Recreation.gov availability API and the app's `/cabin/[id]` route.
+Primary key: `facility_id` (text) — the RIDB FacilityID, same ID used in Recreation.gov
+availability API and the app's `/cabin/[id]` route.
 
 Key columns:
 - `facility_id`, `facility_name`, `rec_area_name` — identity / display
@@ -50,16 +94,34 @@ Fetch for a listing: `.eq('facility_id', id).order('is_primary', { ascending: fa
 
 ### `alerts` — user-owned, RLS enforced
 One row = one user watching one cabin for a date range.
-Columns: `id` (uuid), `user_id` (FK → auth.users), `facility_id`, `date_from`, `date_to`, `active`.
-Requires Supabase Auth session — anon key cannot write.
 
-### `notifications` — append-only log
-One row per alert fired. Columns: `alert_id`, `sent_at`, `type` (email/sms/push), `availability_date`, `message`.
-Users can read their own (RLS joins through `alerts`). Written server-side only.
+**Schema (v2 — migration applied):**
+```
+id                  uuid primary key
+user_id             uuid not null → auth.users (cascade delete)
+facility_id         text not null → cabins (cascade delete)
+type                text not null  -- "cancellation" | "reminder"
+date_from           date not null
+date_to             date not null
+flexibility         text nullable  -- "strict" | "flexible" (cancellation only)
+notify_when         text nullable  -- "1day" | "1week" (reminder only)
+notification_method text not null default 'email'  -- "email" | "sms"
+status              text not null default 'active'  -- "active" | "triggered" | "cancelled"
+created_at          timestamptz default now()
+updated_at          timestamptz default now()
+```
 
-### Supabase client
-`lib/supabase.ts` — singleton using `NEXT_PUBLIC_SUPABASE_URL` + `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
-Public tables (cabins, cabin_images) work with the anon key. Alerts require auth.
+Constraints:
+- Unique: `(user_id, facility_id, date_from, date_to)` — exact duplicates, returns 23505
+- GiST exclusion constraint (requires `btree_gist`): prevents overlapping date ranges for same user + cabin, returns 23P01
+- Index on `status = 'active'` for efficient cron job queries
+
+RLS: users can select/insert/update/delete only their own rows (`auth.uid() = user_id`).
+
+Architecture documented in `docs/alerts-architecture.md`.
+
+### `notifications` — append-only log (future)
+One row per notification fired. Written server-side only.
 
 ---
 
@@ -120,12 +182,11 @@ All tokens in `app/theme.css` inside `@theme {}`. Use as Tailwind utilities.
 
 ### `components/ui/` — reusable primitives
 - `field.tsx` — `<Field>` (label below input) + `<FieldControl>` (non-input variant)
-- `text-input.tsx` — styled text input with underline + outline variants
-- `button.tsx` — CVA button with variants (via @base-ui/react)
-- `calendar-input.tsx` — date range picker. Exports `CalendarInput` + `CalendarHeader`. Props: `checkIn`, `checkOut`, `onChange`, `bookedDates?`. Root is `w-fit mx-auto`.
-- `date-cell.tsx` — calendar cell primitive. States: `default`, `disabled`, `day`, `hover`, `selected`, `in-range`. Positions: `single`, `start`, `end`. Used in both CalendarInput and /design.
+- `auth-button.tsx` — nav auth state. Shows email + "Sign out" when logged in, "Log in" (Google OAuth) when logged out. Uses `onAuthStateChange`.
+- `calendar-input.tsx` — date range picker. Props: `checkIn`, `checkOut`, `onChange`, `availableDates?`, `fetchedMonths?`, `onMonthChange?`. Root is `w-fit mx-auto`.
+- `date-cell.tsx` — calendar cell primitive. States: `default`, `disabled`, `unavailable`, `day`, `hover`, `selected`, `in-range`. `unavailable` = booked/not-open, clickable with dot indicator. `disabled` = past dates or before selected start, non-interactive.
 - `booking-panel.tsx` — shell for booking flows: `h-[600px]`, `p-9`, title + `flex-1` content + sticky CTA slot.
-- `availability-panel.tsx` — full booking widget. Fetches rec.gov availability, shows calendar with disabled dates, three CTA states, alert/reminder wizard.
+- `availability-panel.tsx` — full booking widget. Fetches rec.gov availability, calendar with date states, three CTA states (book / alert / reminder), alert-setup + reminder-setup + confirmed views. Auth-gated: triggers Google OAuth if not signed in, restores view+dates from URL params after redirect.
 - `spinner.tsx` — `<Spinner size={24} />` centered loading indicator.
 - `search.tsx` — search bar used in landing + search page
 - `status-bar.tsx` — "● last checked Xs ago" + rec.gov link bar
@@ -145,6 +206,21 @@ All tokens in `app/theme.css` inside `@theme {}`. Use as Tailwind utilities.
 
 ---
 
+## Key files
+
+| File | Purpose |
+|---|---|
+| `proxy.ts` | Session refresh on every request (Next.js 16 = middleware.ts renamed) |
+| `app/auth/callback/route.ts` | OAuth callback — exchanges code for session cookie, redirects via `?next=` |
+| `lib/supabase/server.ts` | Server-side Supabase client (cookies) |
+| `lib/supabase/client.ts` | Browser-side Supabase client |
+| `supabase/config.toml` | Local Supabase config incl. Google OAuth settings |
+| `supabase/migrations/` | Schema migration files — applied with `supabase db reset` (local) or `supabase db push` (prod) |
+| `docs/authentication.md` | Full auth architecture doc |
+| `docs/alerts-architecture.md` | Alerts data model + server action design |
+
+---
+
 ## Conventions
 
 1. No magic values — no `style={{}}`, no `text-[Xpx]`, no `w-[Npx]` unless a named token
@@ -155,3 +231,4 @@ All tokens in `app/theme.css` inside `@theme {}`. Use as Tailwind utilities.
 6. Rule of 3 — extract repeated UI into `components/ui/` before it appears 3 times
 7. shadcn only for: Calendar, Dialog, Popover, Select, Sonner, Form — not installed yet
 8. Delete superseded files immediately — verify with `grep` that zero files import them first
+9. No nested or chained ternaries (`a ? b : c ? d : e`) — ESLint enforces `no-nested-ternary`. Use if/else or a lookup object instead.
