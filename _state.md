@@ -7,19 +7,29 @@
 
 ## Current phase
 **Build phase — Week 3**
-Landing page live. Listing page live with real availability data. Google OAuth auth fully wired. Next: alert save to Supabase.
+Landing page live. Listing page live with real availability data. Google OAuth fully wired. Alert save fully wired. Next: showing existing alerts on the cabin page.
 
-## Last session (2026-06-04)
+## Last session (2026-06-05)
 
-### Alerts architecture — decisions made
-See `docs/alerts-architecture.md` for the full write-up. Key decisions from today:
+### Alerts — fully built
+- Migration `20260604180000_alerts_v2.sql` applied locally and pushed to prod.
+- `app/api/alerts/route.ts` — POST endpoint. Handles 23505 (duplicate) and 23P01 (overlap) errors.
+- `availability-panel.tsx` wired: "Confirm alert" and "Confirm reminder" call the API, show loading/error states, display user email in confirmed view.
+- Full architecture in `docs/alerts-architecture.md`.
 
-- **`cabin_name` dropped** from alerts schema — a join on 500 rows is trivially cheap, no reason to denormalize.
-- **`notification_method` added** — defaults to `"email"`, nullable for future SMS. Costs nothing to add now.
-- **Unique constraint** `(user_id, facility_id, date_from, date_to)` handles exact duplicates.
-- **Overlap exclusion** — use a Postgres GiST exclusion constraint to prevent overlapping date ranges for the same user + cabin (e.g. user creates "all of July" then "week in July"). Also add frontend check for a friendly UX message before hitting the constraint.
-- **Cron job** — will use Vercel Cron (`app/api/cron/check-alerts/route.ts` running every 15 min). Schema supports it: `status = 'active'` index for efficient querying, `type`/`flexibility`/`notify_when` tell the job what to check.
-- **`active` boolean replaced by `status` text** — `"active"` | `"triggered"` | `"cancelled"`.
+### Alerts schema decisions (see doc for full rationale)
+- `cabin_name` dropped — join on 500-row table is trivially cheap.
+- `notification_method` added, default `"email"` — in place for future SMS without a schema migration.
+- Unique constraint `(user_id, facility_id, date_from, date_to)` + GiST exclusion constraint for overlapping ranges (requires `btree_gist`).
+- `active` boolean replaced by `status` text: `"active"` | `"triggered"` | `"cancelled"`.
+- Reminders saved to DB but cron job will skip them — need `booking_window_opens_at` design first.
+- One table for both types (cancellation + reminder).
+
+### API pattern decision
+Using `app/api/*/route.ts` for DB writes (not Next.js server actions). Reason: easier to explain in interviews.
+
+### seed.sql cleanup
+Stripped all `auth.*` session data from `supabase/seed.sql`. Now contains only `public.cabins` and `public.cabin_images` — safe for public repo, useful for contributors running `supabase db reset`.
 
 ### Local dev environment — fully set up
 - Local Supabase via Docker. Schema pulled from prod. Cabin + image data seeded via `psql`.
@@ -78,51 +88,16 @@ See `docs/alerts-architecture.md` for the full write-up. Key decisions from toda
 - To resume local dev: open Docker Desktop, run `supabase start`, then `npm run dev`
 
 ## Next tasks (priority order)
-1. **Alert save** — three steps:
-   - Write + apply migration: add `type`, `flexibility`, `notify_when`, `notification_method`, `status` columns; drop `active`; add unique + GiST overlap constraints; add `status = 'active'` index.
-   - Build `app/actions/alerts.ts` server action.
-   - Wire "Confirm alert" + "Confirm reminder" buttons in `availability-panel.tsx`. Update confirmed view to show `auth.users.email`.
+1. **Show existing alerts on cabin page** — user designing treatments in Figma. Open questions: date-aware vs. always show, read-only vs. allow cancellation, cabin page only vs. also a global dashboard.
 2. **Listing page polish** — mobile layout, description text, image gallery
 3. **Search / Map page** — lat/lng ready in Supabase
-2. **Listing page polish** — mobile layout review, description text, image gallery
-3. **Search / Map page** — lat/lng in Supabase, ready to drop map pins
-
-## Alert system — planning notes (2026-06-03)
-
-### Constraints to design around
-1. **No auth yet.** Alerts are user-agnostic for the initial build. When auth is added later we'll run a migration to add a `user_id` column to `alerts` and associate records with a starter/anonymous user. Schema should be designed with this migration in mind — don't make `user_id` NOT NULL yet.
-
-2. **Deduplication.** The same person shouldn't be able to create duplicate alerts for the same cabin + date range. Need a uniqueness strategy — likely a unique constraint on `(contact, facility_id, date_from, date_to)` or similar.
-
-3. **Contact collection.** The alert form collects phone number (SMS) and/or email. These are the only identity signals we have pre-auth. `contact` on the alert row should store whichever was provided.
-
-4. **Testing strategy.** Entering higher-stakes territory than UI work. Need a plan for: unit testing the alert insert logic, integration testing the dedup constraint, and a way to verify SMS/email actually fires. Don't want to ship a broken alert product to users.
-
-### Three CTA states (all UI already built)
-1. **Available** → "Book on Recreation.gov →" (external link, nothing saved)
-2. **Booked** → "Set up an alert →" → alert-setup view (flexibility toggle + notify method) → "Confirm alert"
-3. **Not open** → "Set a reminder →" → reminder-setup view (notify-when toggle + notify method) → "Confirm reminder"
-
-### Alert vs Reminder distinction
-- **Alert** (`type: "cancellation"`): cabin is booked, user wants to know if a cancellation opens up. Has `flexibility` field (strict / ±7 days).
-- **Reminder** (`type: "reminder"`): booking window not open yet, user wants a heads-up before it opens. Has `notify_when` field (1 day / 1 week before open date).
-
-### Decisions made
-- **SMS dropped.** Email only. No Twilio, no phone OTP.
-- **Auth before alert flow.** Google OAuth via Supabase gives us a verified email, so the
-  "How should we notify you?" step on the alert panel is removed entirely.
-- **Contact input step removed.** Email comes from `auth.users.email` post-sign-in.
-
-### Open questions (tackle piece by piece)
-- Supabase function vs Next.js server action for the alert insert?
-- What testing tools/approach fits this stack?
-- Deduplication: unique constraint on `(user_id, facility_id, date_from, date_to)`?
 
 ## Decisions log (stable — do not re-litigate)
 - Search: Supabase + fuse.js client-side, all 519 cabins loaded on mount, opens in new tab
 - Availability: live call to rec.gov's undocumented internal API. **Known risk: endpoint can vanish without notice.** Acceptable for portfolio demo.
 - Route: `/cabin/[id]` — `id` param = `facility_id` from RIDB/Supabase
-- Auth: Supabase magic link, signup inside alert flow
+- Auth: Google OAuth via Supabase. Email from `auth.users.email` — no manual contact input.
+- DB writes: `app/api/*/route.ts` pattern, not server actions
 - Facility name format: title-case + preserve parentheticals as-is (e.g. "(MT)", "(AK)")
 - Signal: `—` always — only 1% RIDB coverage, not worth a live API call
 - Nightly rate: from RIDB `FacilityUseFeeDescription` regex — 54/519 cabins, shows `—` otherwise

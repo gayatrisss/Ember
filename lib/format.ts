@@ -8,6 +8,19 @@ export function formatFacilityName(name: string): string {
     .replace(/\(([A-Za-z]{2})\)/g, (_, code) => `(${code.toUpperCase()})`)
 }
 
+export function formatCabinName(name: string): string {
+  return formatFacilityName(name)
+}
+
+export function formatDateRange(from: string, to: string): string {
+  const [fy, fm, fd] = from.split("-").map(Number)
+  const [ty, tm, td] = to.split("-").map(Number)
+  const f = new Date(fy, fm - 1, fd)
+  const t = new Date(ty, tm - 1, td)
+  const fmt = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" })
+  return `${fmt.format(f)} – ${fmt.format(t)}`
+}
+
 export function getCabinType(name: string): string {
   const n = name.toLowerCase()
   if (n.includes("lookout")) return "Lookout"

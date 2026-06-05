@@ -13,6 +13,7 @@
   --color-ember-range: #803913;     /* 50% brightness — in-range fill and hover bg */
   --color-smoke: #5f7a8a;
   --color-wax: #ede8dc;
+  --color-wax-muted: #b2afa6;
 
   /* === Typography === */
   --font-display: var(--font-fraunces);
@@ -28,6 +29,8 @@
   --width-copy: 280px;
   --width-copy-wide: 300px;
   --width-sidebar: 440px;
+  --width-alert-thumb: 106px;
+  --height-alert-thumb: 71px;
 
   /* === Shadows === */
   --shadow-ember-sm: 0 0 12px rgb(212 90 32 / 0.6);

@@ -15,7 +15,7 @@ export default function TopNav() {
             Explore
           </a>
           <a
-            href="#"
+            href="/my-alerts"
             className="hidden md:flex text-body text-wax hover:text-ember items-center gap-2"
           >
             <Bell size={18} />
