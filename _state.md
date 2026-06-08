@@ -7,7 +7,35 @@
 
 ## Current phase
 **Build phase — Week 3**
-Landing page live. Listing page live with real availability data. Google OAuth fully wired. Alert save fully wired. Next: showing existing alerts on the cabin page.
+Landing page live. Listing page live with real availability data. Google OAuth fully wired. Alert save fully wired. `/my-alerts` dashboard page in progress — shell + AlertCard built, next: cancel alert action + expanded row details.
+
+## Last session (2026-06-08)
+
+### Alerts dashboard — in progress
+- **`supabase db push`** run — v2 alerts migration now live in prod (status, flexibility, notification_method, type columns confirmed).
+- **`/my-alerts`** page created. Server component. Fetches user's non-cancelled alerts via Supabase directly, splits into `triggered` (Needs Attention) and `active` (Currently Watching) sections.
+- Empty state: "Find a cabin worth waiting for. Set an alert and we'll do the refreshing for you." + "Explore cabins" CTA → `/`.
+- **Top-nav Alerts link** now routes to `/my-alerts`.
+- **`GET /api/alerts`** added to `app/api/alerts/route.ts` — returns non-cancelled alerts with cabin join for client-side use.
+- **`AlertCard`** (`components/alerts/alert-card.tsx`) — Figma-spec row: thumbnail (106×71), Fraunces italic cabin name, forest · date range, WATCHING badge, chevron. Uses `next/image`.
+- **Page spacing** (Figma-spec): 120px headline→label (`mt-30`), 46px label→cards (`mt-section-content`), 80px between sections (`gap-20`), 24px between cards (`gap-6`).
+
+### New design tokens added to `theme.css`
+- `--color-wax-muted: #b2afa6` — muted wax used throughout Figma for secondary text
+- `--width-alert-thumb: 106px` / `--height-alert-thumb: 71px` — alert card thumbnail
+- `--spacing-section-content: 46px` — gap between a section label and its first card
+
+### New format helpers in `lib/format.ts`
+- `formatCabinName(name)` — canonical wrapper around `formatFacilityName`. Use this everywhere a cabin name is displayed.
+- `formatDateRange(from, to)` — parses DB date strings as local dates, returns e.g. "Jul 4 – Aug 31".
+
+### Dashboard design decisions (do not re-litigate)
+- Needs Attention = `status = 'triggered'`, Currently Watching = `status = 'active'`
+- "Date flexibility" shown as hardcoded "± 7 days" in UI — DB stores 'strict'/'flexible' binary
+- `notification_method` not shown in UI (column stays in schema)
+- No notifications table yet — Needs Attention section is empty state: "Keep an eye out here for notifications regarding availability"
+- Cancel alert: PATCH sets `status = 'cancelled'`, row shows CANCELLED badge briefly then fades out — **not yet built**
+- Pause: deferred to later
 
 ## Last session (2026-06-05)
 
@@ -88,9 +116,11 @@ Stripped all `auth.*` session data from `supabase/seed.sql`. Now contains only `
 - To resume local dev: open Docker Desktop, run `supabase start`, then `npm run dev`
 
 ## Next tasks (priority order)
-1. **Show existing alerts on cabin page** — user designing treatments in Figma. Open questions: date-aware vs. always show, read-only vs. allow cancellation, cabin page only vs. also a global dashboard.
-2. **Listing page polish** — mobile layout, description text, image gallery
-3. **Search / Map page** — lat/lng ready in Supabase
+1. **Alert dashboard — cancel action** — PATCH `/api/alerts/[id]`, optimistic CANCELLED badge → fade out after 2.5s
+2. **Alert dashboard — expanded row** — chevron expand: dates watching, "± 7 days" flexibility (hardcoded), map placeholder, cancel button
+3. **Alert dashboard — notifications empty state** — "Keep an eye out here for notifications regarding availability" in the Needs Attention section
+4. **Listing page polish** — mobile layout, description text, image gallery
+5. **Search / Map page** — lat/lng ready in Supabase
 
 ## Decisions log (stable — do not re-litigate)
 - Search: Supabase + fuse.js client-side, all 519 cabins loaded on mount, opens in new tab
@@ -142,5 +172,5 @@ SUPABASE_SERVICE_KEY            # seed/ingest scripts only — not committed
 | Landing | ✅ | ✅ | ✅ |
 | Listing | ✅ | ✅ | 🔲 |
 | Search / Map | ✅ | 🔲 | 🔲 |
-| Alert dashboard | 🔲 | 🔲 | 🔲 |
+| Alert dashboard | ✅ | 🔧 | 🔲 |
 | Email templates | 🔲 | 🔲 | 🔲 |

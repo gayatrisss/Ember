@@ -14,6 +14,7 @@
   --color-smoke: #5f7a8a;
   --color-wax: #ede8dc;
   --color-wax-muted: #b2afa6;
+  --color-ash: #171a17;          /* Expanded alert card header strip surface */
 
   /* === Typography === */
   --font-display: var(--font-fraunces);
@@ -31,6 +32,8 @@
   --width-sidebar: 440px;
   --width-alert-thumb: 106px;
   --height-alert-thumb: 71px;
+  --height-alert-header: 46px;   /* Expanded alert card header strip */
+  --spacing-section-content: 46px;
 
   /* === Shadows === */
   --shadow-ember-sm: 0 0 12px rgb(212 90 32 / 0.6);
