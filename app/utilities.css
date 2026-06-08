@@ -184,6 +184,14 @@
     color: color-mix(in oklch, var(--color-ember) 50%, transparent);
   }
 
+  /* Standard bottom padding before the footer — 48px mobile, 120px desktop */
+  .pb-page {
+    padding-bottom: 48px;
+    @media (min-width: 1024px) {
+      padding-bottom: 120px;
+    }
+  }
+
   /* Listing page — cabin photo fades into topo strip below */
   .topo-photo-fade {
     mask-image: linear-gradient(to bottom, black 50%, transparent 100%);

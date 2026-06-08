@@ -3,13 +3,14 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowUpRight, ChevronDown, ChevronUp, Pencil, Trash2 } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
+import { ArrowUpRight, ChevronDown, Pencil, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { formatCabinName, formatDateRange } from "@/lib/format";
 import { Modal } from "@/components/ui/modal";
 import { Badge } from "@/components/ui/badge";
 
-type Props = {
+export type AlertCardProps = {
   alertId: string;
   facilityId: string;
   cabinName: string;
@@ -23,6 +24,8 @@ type Props = {
 
 type CancelState = "idle" | "loading" | "cancelled" | "fading";
 
+const expandEase = [0.4, 0, 0.2, 1] as const;
+
 export function AlertCard({
   alertId,
   facilityId,
@@ -33,13 +36,11 @@ export function AlertCard({
   imageUrl,
   status,
   flexibility,
-}: Props) {
+}: AlertCardProps) {
   const router = useRouter();
   const isTriggered = status === "triggered";
 
-  // active cards: toggles full expand/collapse
   const [expanded, setExpanded] = useState(false);
-  // triggered cards: toggles the metadata section (settings + location)
   const [metaVisible, setMetaVisible] = useState(true);
   const [cancelState, setCancelState] = useState<CancelState>("idle");
   const [showCancelModal, setShowCancelModal] = useState(false);
@@ -78,13 +79,9 @@ export function AlertCard({
     }
 
     setCancelState("cancelled");
-    setTimeout(() => {
-      setCancelState("fading");
-      setTimeout(() => router.refresh(), 700);
-    }, 1500);
+    setTimeout(() => setCancelState("fading"), 1500);
   }
 
-  // Shared across both card types
   const settingsRows = (
     <div className="flex flex-col gap-2">
       <SettingRow label="Dates Watching" value={dateRange} />
@@ -109,14 +106,12 @@ export function AlertCard({
           <ArrowUpRight size={16} className="text-wax-muted" />
         </a>
       </div>
-      {/* h-40 = 160px ≈ 161px from Figma */}
       <div className="rounded-lg bg-smoke/10 h-40 flex items-center justify-center">
         <p className="text-label text-smoke">Map coming soon</p>
       </div>
     </div>
   );
 
-  // pt-6 (24px) on top of the gap-12 (48px) that separates it from the location section
   const cancelButton = (
     <div className="flex flex-col gap-3 items-center pt-6 w-full">
       <p className="text-body text-wax-muted">
@@ -146,171 +141,180 @@ export function AlertCard({
     />
   ) : null;
 
+  const cancelModal = (
+    <Modal
+      isOpen={showCancelModal}
+      title="Cancel this alert?"
+      description={`Once cancelled, you won't receive any more notifications for ${formatCabinName(cabinName)}.`}
+      confirmLabel="Yes, cancel alert"
+      onConfirm={() => { setShowCancelModal(false); handleCancel(); }}
+      dismissLabel="Keep watching"
+      onDismiss={() => setShowCancelModal(false)}
+      variant="destructive"
+    />
+  );
+
   // ─── Needs Attention (triggered) ────────────────────────────────────────────
-  // Always expanded. Metadata section (settings + location) is separately togglable.
   if (isTriggered) {
     return (
       <>
-      <div
-        className={`transition-opacity duration-700 ${cancelState === "fading" ? "opacity-0" : "opacity-100"}`}
-      >
-        <div className="bg-evergreen rounded-lg overflow-hidden">
-          {/* Header bar — px-6 (24px), h-alert-header (46px) */}
-          <div className="bg-ash h-alert-header flex items-center justify-between px-6">
-            <span className="text-data text-smoke uppercase">
-              Last Checked <span className="text-wax-muted">—</span>
-            </span>
-          </div>
+        <motion.div
+          animate={{ opacity: cancelState === "fading" ? 0 : 1 }}
+          transition={{ duration: 0.35 }}
+          onAnimationComplete={() => { if (cancelState === "fading") router.refresh(); }}
+        >
+          <div className="bg-evergreen rounded-lg overflow-hidden">
+            <div className="bg-ash h-alert-header flex items-center justify-between px-6">
+              <span className="text-data text-smoke uppercase">
+                Last Checked <span className="text-wax-muted">—</span>
+              </span>
+            </div>
 
-          {/* Content — px-20 (80px), pt-12 (≈46px), pb-15 (60px) */}
-          <div className="px-20 pt-12 pb-15">
-            {/* Cabin name (left) + dates watching (right) */}
-            <div className="flex justify-between items-start">
-              <div className="flex flex-col gap-2">
-                <Link
-                  href={`/cabin/${facilityId}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-display-fraunces-sm text-white hover:opacity-80 transition-opacity"
-                >
-                  {formatCabinName(cabinName)}
-                </Link>
-                {recAreaName && (
-                  <p className="text-body text-wax-muted">{recAreaName}</p>
-                )}
+            <div className="px-20 pt-12 pb-15">
+              <div className="flex justify-between items-start">
+                <div className="flex flex-col gap-2">
+                  <Link
+                    href={`/cabin/${facilityId}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-display-fraunces-sm text-white hover:opacity-80 transition-opacity"
+                  >
+                    {formatCabinName(cabinName)}
+                  </Link>
+                  {recAreaName && (
+                    <p className="text-body text-wax-muted">{recAreaName}</p>
+                  )}
+                </div>
+                <div className="flex flex-col gap-2 items-end shrink-0">
+                  <p className="text-label text-wax-muted uppercase">Dates Watching</p>
+                  <p className="text-body text-white">{dateRange}</p>
+                </div>
               </div>
-              <div className="flex flex-col gap-2 items-end shrink-0">
-                <p className="text-label text-wax-muted uppercase">
-                  Dates Watching
+
+              <div className="pt-16">
+                <p className="text-body text-smoke">
+                  Keep an eye out here for notifications regarding availability
                 </p>
-                <p className="text-body text-white">{dateRange}</p>
               </div>
+
+              <div className="mt-8 h-px bg-smoke/20" />
+
+              <button
+                type="button"
+                className="w-full pt-6 flex items-center justify-between hover:opacity-80 transition-opacity"
+                onClick={() => setMetaVisible(!metaVisible)}
+              >
+                <div className="flex gap-4 items-center">
+                  <span className="text-body text-wax">
+                    {metaVisible ? "Hide" : "Show"} alert details
+                  </span>
+                  <span className="text-body text-wax-muted">
+                    settings, history, and more
+                  </span>
+                </div>
+                <motion.div
+                  animate={{ rotate: metaVisible ? 180 : 0 }}
+                  transition={{ duration: 0.3, ease: expandEase }}
+                >
+                  <ChevronDown size={24} className="text-wax" />
+                </motion.div>
+              </button>
+
+              <AnimatePresence initial={false}>
+                {metaVisible && (
+                  <motion.div
+                    key="meta"
+                    className="overflow-hidden"
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.3, ease: expandEase }}
+                  >
+                    <div className="pt-16 px-10 flex flex-col gap-12">
+                      {settingsRows}
+                      {locationSection}
+                      {cancelButton}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
-
-            {/* Notifications placeholder — pt-16 (64px gap from cabin section) */}
-            <div className="pt-16">
-              <p className="text-body text-smoke">
-                Keep an eye out here for notifications regarding availability
-              </p>
-            </div>
-
-            {/* Divider — mt-8 above */}
-            <div className="mt-8 h-px bg-smoke/20" />
-
-            {/* Metadata toggle — pt-6 below divider, gap-4 between texts */}
-            <button
-              type="button"
-              className="w-full pt-6 flex items-center justify-between hover:opacity-80 transition-opacity"
-              onClick={() => setMetaVisible(!metaVisible)}
-            >
-              <div className="flex gap-4 items-center">
-                <span className="text-body text-wax">
-                  {metaVisible ? "Hide" : "Show"} alert details
-                </span>
-                <span className="text-body text-wax-muted">
-                  settings, history, and more
-                </span>
-              </div>
-              {metaVisible ? (
-                <ChevronUp size={24} className="text-wax" />
-              ) : (
-                <ChevronDown size={24} className="text-wax" />
-              )}
-            </button>
-
-            {/* Metadata — pt-16 gap, px-10 (40px) additional indent = 120px total */}
-            {metaVisible && (
-              <div className="pt-16 px-10 flex flex-col gap-12">
-                {settingsRows}
-                {locationSection}
-                {cancelButton}
-              </div>
-            )}
           </div>
-        </div>
-      </div>
-      <Modal
-        isOpen={showCancelModal}
-        title="Cancel this alert?"
-        description={`Once cancelled, you won't receive any more notifications for ${formatCabinName(cabinName)}.`}
-        confirmLabel="Yes, cancel alert"
-        onConfirm={() => { setShowCancelModal(false); handleCancel(); }}
-        dismissLabel="Keep watching"
-        onDismiss={() => setShowCancelModal(false)}
-        variant="destructive"
-      />
+        </motion.div>
+        {cancelModal}
       </>
     );
   }
 
-  // ─── Currently Watching (active) ────────────────────────────────────────────
-  // The compact row is always rendered so the image never remounts.
-  // The body is conditionally rendered below it.
+  // ─── Currently Watching / Past Alerts (active | cancelled) ──────────────────
   const showBody = expanded && !isCancelling;
-  const showChevronUp = expanded && !isCancelling;
 
   return (
-    <div
-      className={`transition-opacity duration-700 ${cancelState === "fading" ? "opacity-0" : "opacity-100"}`}
-    >
-      <div className="bg-evergreen rounded-lg overflow-hidden">
-        {/* Compact row — always in the DOM, no image flicker on expand */}
-        <div
-          className={`p-5 flex items-center justify-between ${!isCancelling ? "cursor-pointer" : "cursor-default"}`}
-          onClick={() => !isCancelling && setExpanded(!expanded)}
-        >
-          <Link
-            href={`/cabin/${facilityId}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={(e) => e.stopPropagation()}
-            className="flex items-center gap-6 hover:opacity-80 transition-opacity"
+    <>
+      <motion.div
+        animate={{ opacity: cancelState === "fading" ? 0 : 1 }}
+        transition={{ duration: 0.35 }}
+        onAnimationComplete={() => { if (cancelState === "fading") router.refresh(); }}
+      >
+        <div className="bg-evergreen rounded-lg overflow-hidden">
+          <div
+            className={`p-5 flex items-center justify-between ${!isCancelling ? "cursor-pointer" : "cursor-default"}`}
+            onClick={() => !isCancelling && setExpanded(!expanded)}
           >
-            <div className="w-alert-thumb h-alert-thumb rounded shrink-0 overflow-hidden bg-smoke/20">
-              {thumbnail}
+            <Link
+              href={`/cabin/${facilityId}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="flex items-center gap-6 hover:opacity-80 transition-opacity"
+            >
+              <div className="w-alert-thumb h-alert-thumb rounded shrink-0 overflow-hidden bg-smoke/20">
+                {thumbnail}
+              </div>
+              <div className="flex flex-col gap-2">
+                <p className="text-display-fraunces-sm text-white">
+                  {formatCabinName(cabinName)}
+                </p>
+                <p className="text-body text-wax-muted">
+                  {recAreaName ? `${recAreaName} · ${dateRange}` : dateRange}
+                </p>
+              </div>
+            </Link>
+            <div className="flex items-center gap-3 shrink-0">
+              <Badge variant={badgeVariant}>{badgeLabel}</Badge>
+              <motion.div
+                animate={{ rotate: showBody ? 180 : 0 }}
+                transition={{ duration: 0.3, ease: expandEase }}
+              >
+                <ChevronDown size={24} className="text-wax" />
+              </motion.div>
             </div>
-            <div className="flex flex-col gap-2">
-              <p className="text-display-fraunces-sm text-white">
-                {formatCabinName(cabinName)}
-              </p>
-              <p className="text-body text-wax-muted">
-                {recAreaName ? `${recAreaName} · ${dateRange}` : dateRange}
-              </p>
-            </div>
-          </Link>
-          <div className="flex items-center gap-3 shrink-0">
-            <Badge variant={badgeVariant}>{badgeLabel}</Badge>
-            {showChevronUp ? (
-              <ChevronUp size={24} className="text-wax" />
-            ) : (
-              <ChevronDown size={24} className="text-wax" />
-            )}
           </div>
-        </div>
 
-        {/* Body — px-30 (120px), py-15 (60px), gap-12 (48px) between sections */}
-        {showBody && (
-          <div className="px-30 py-15 flex flex-col gap-12">
-            {settingsRows}
-            {locationSection}
-            {status !== "cancelled" && cancelButton}
-          </div>
-        )}
-      </div>
-      <Modal
-        isOpen={showCancelModal}
-        title="Cancel this alert?"
-        description={`Once cancelled, you won't receive any more notifications for ${formatCabinName(cabinName)}.`}
-        confirmLabel="Yes, cancel alert"
-        onConfirm={() => { setShowCancelModal(false); handleCancel(); }}
-        dismissLabel="Keep watching"
-        onDismiss={() => setShowCancelModal(false)}
-        variant="destructive"
-      />
-    </div>
+          <AnimatePresence initial={false}>
+            {showBody && (
+              <motion.div
+                key="body"
+                className="overflow-hidden"
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.3, ease: expandEase }}
+              >
+                <div className="px-30 py-15 flex flex-col gap-12">
+                  {settingsRows}
+                  {locationSection}
+                  {status !== "cancelled" && cancelButton}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </motion.div>
+      {cancelModal}
+    </>
   );
 }
-
 
 function SettingRow({ label, value }: { label: string; value: string }) {
   return (

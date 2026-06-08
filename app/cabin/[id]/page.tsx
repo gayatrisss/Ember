@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import TopNav from "@/components/landing/top-nav";
+import Footer from "@/components/landing/footer";
 import StatusBar from "@/components/ui/status-bar";
 import CabinHeader from "@/components/listing/cabin-header";
 import { CabinFacts } from "@/components/listing/cabin-facts";
@@ -35,11 +36,11 @@ export default async function CabinPage({ params }: { params: Promise<Params> })
   const rate = formatRate(cabin.nightly_rate);
 
   return (
-    <div className="min-h-screen bg-night">
+    <div className="min-h-screen bg-night flex flex-col">
       <TopNav />
       <StatusBar facilityId={id} />
 
-      <main className="page-container py-8 lg:py-12">
+      <main className="flex-1 page-container pt-8 lg:pt-12 pb-page">
         <CabinHeader cabin={cabin} />
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8 lg:items-stretch">
@@ -63,6 +64,7 @@ export default async function CabinPage({ params }: { params: Promise<Params> })
 
         <FieldNotes cabin={cabin} />
       </main>
+      <Footer />
     </div>
   );
 }

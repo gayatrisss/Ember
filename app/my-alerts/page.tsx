@@ -1,7 +1,9 @@
 import Link from "next/link";
 import TopNav from "@/components/landing/top-nav";
+import Footer from "@/components/landing/footer";
 import { createClient } from "@/lib/supabase/server";
-import { AlertCard } from "@/components/alerts/alert-card";
+import { AlertCardList } from "@/components/alerts/alert-card-list";
+import type { AlertCardProps } from "@/components/alerts/alert-card";
 
 type CabinImage = { url: string; is_preview: boolean | null };
 
@@ -20,6 +22,22 @@ type AlertRow = {
     cabin_images: CabinImage[];
   } | null;
 };
+
+function toCardProps(alert: AlertRow): AlertCardProps {
+  const images = alert.cabins?.cabin_images ?? [];
+  const image = images.find((i) => i.is_preview) ?? images[0] ?? null;
+  return {
+    alertId: alert.id,
+    facilityId: alert.facility_id,
+    cabinName: alert.cabins?.facility_name ?? alert.facility_id,
+    recAreaName: alert.cabins?.rec_area_name ?? null,
+    dateFrom: alert.date_from,
+    dateTo: alert.date_to,
+    imageUrl: image?.url ?? null,
+    status: alert.status,
+    flexibility: alert.flexibility,
+  };
+}
 
 export default async function AlertsPage() {
   const supabase = await createClient();
@@ -46,9 +64,9 @@ export default async function AlertsPage() {
   const hasAlerts = triggered.length > 0 || active.length > 0 || cancelled.length > 0;
 
   return (
-    <div className="min-h-screen bg-night">
+    <div className="min-h-screen bg-night flex flex-col">
       <TopNav />
-      <main className="page-container py-8 lg:py-12">
+      <main className="flex-1 page-container pt-8 lg:pt-12 pb-page">
         <h1 className="text-display-fraunces text-wax">Alerts</h1>
 
         {hasAlerts ? (
@@ -56,76 +74,19 @@ export default async function AlertsPage() {
             {triggered.length > 0 && (
               <section>
                 <p className="text-body text-wax uppercase">Needs Attention</p>
-                <div className="mt-section-content flex flex-col gap-6">
-                  {triggered.map((alert) => {
-                    const images = alert.cabins?.cabin_images ?? [];
-                    const image = images.find((i) => i.is_preview) ?? images[0] ?? null;
-                    return (
-                      <AlertCard
-                        key={alert.id}
-                        alertId={alert.id}
-                        facilityId={alert.facility_id}
-                        cabinName={alert.cabins?.facility_name ?? alert.facility_id}
-                        recAreaName={alert.cabins?.rec_area_name ?? null}
-                        dateFrom={alert.date_from}
-                        dateTo={alert.date_to}
-                        imageUrl={image?.url ?? null}
-                        status={alert.status}
-                        flexibility={alert.flexibility}
-                      />
-                    );
-                  })}
-                </div>
+                <AlertCardList alerts={triggered.map(toCardProps)} />
               </section>
             )}
             {active.length > 0 && (
               <section>
                 <p className="text-body text-wax uppercase">Currently Watching</p>
-                <div className="mt-section-content flex flex-col gap-6">
-                  {active.map((alert) => {
-                    const images = alert.cabins?.cabin_images ?? [];
-                    const image = images.find((i) => i.is_preview) ?? images[0] ?? null;
-                    return (
-                      <AlertCard
-                        key={alert.id}
-                        alertId={alert.id}
-                        facilityId={alert.facility_id}
-                        cabinName={alert.cabins?.facility_name ?? alert.facility_id}
-                        recAreaName={alert.cabins?.rec_area_name ?? null}
-                        dateFrom={alert.date_from}
-                        dateTo={alert.date_to}
-                        imageUrl={image?.url ?? null}
-                        status={alert.status}
-                        flexibility={alert.flexibility}
-                      />
-                    );
-                  })}
-                </div>
+                <AlertCardList alerts={active.map(toCardProps)} />
               </section>
             )}
             {cancelled.length > 0 && (
               <section>
                 <p className="text-body text-wax uppercase">Past Alerts</p>
-                <div className="mt-section-content flex flex-col gap-6">
-                  {cancelled.map((alert) => {
-                    const images = alert.cabins?.cabin_images ?? [];
-                    const image = images.find((i) => i.is_preview) ?? images[0] ?? null;
-                    return (
-                      <AlertCard
-                        key={alert.id}
-                        alertId={alert.id}
-                        facilityId={alert.facility_id}
-                        cabinName={alert.cabins?.facility_name ?? alert.facility_id}
-                        recAreaName={alert.cabins?.rec_area_name ?? null}
-                        dateFrom={alert.date_from}
-                        dateTo={alert.date_to}
-                        imageUrl={image?.url ?? null}
-                        status={alert.status}
-                        flexibility={alert.flexibility}
-                      />
-                    );
-                  })}
-                </div>
+                <AlertCardList alerts={cancelled.map(toCardProps)} />
               </section>
             )}
           </div>
@@ -143,6 +104,7 @@ export default async function AlertsPage() {
           </div>
         )}
       </main>
+      <Footer />
     </div>
   );
 }
