@@ -11,6 +11,9 @@ import { DateCell, type DateCellState, type DateCellPosition } from "@/component
 import { ConfirmationAnimations } from "@/components/ui/confirmation-animations";
 import StatusBar from "@/components/ui/status-bar";
 import { Search } from "@/components/ui/search";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Modal } from "@/components/ui/modal";
 
 const COLORS = [
   { token: "night", bg: "bg-night", hex: "#0f1510", label: "Page background" },
@@ -79,6 +82,8 @@ export default function DesignPage() {
   const [radio, setRadio] = useState("immediate");
   const [calIn, setCalIn] = useState<Date | null>(null);
   const [calOut, setCalOut] = useState<Date | null>(null);
+  const [modalVariant, setModalVariant] = useState<"default" | "destructive">("default");
+  const [modalOpen, setModalOpen] = useState(false);
 
   return (
     <div className="min-h-screen bg-night">
@@ -135,6 +140,101 @@ export default function DesignPage() {
             </div>
           ))}
         </div>
+      </section>
+
+      {/* Badge */}
+      <section className="page-container border-b border-wax/10 py-16">
+        <SectionLabel>Badge</SectionLabel>
+        <div className="flex flex-wrap gap-4">
+          <div className="flex flex-col items-start gap-3">
+            <VariantLabel>default</VariantLabel>
+            <Badge variant="default">Watching</Badge>
+          </div>
+          <div className="flex flex-col items-start gap-3">
+            <VariantLabel>accent</VariantLabel>
+            <Badge variant="accent">Available</Badge>
+          </div>
+          <div className="flex flex-col items-start gap-3">
+            <VariantLabel>success</VariantLabel>
+            <Badge variant="success">Booked</Badge>
+          </div>
+          <div className="flex flex-col items-start gap-3">
+            <VariantLabel>warning</VariantLabel>
+            <Badge variant="warning">Expiring</Badge>
+          </div>
+          <div className="flex flex-col items-start gap-3">
+            <VariantLabel>error</VariantLabel>
+            <Badge variant="error">Cancelled</Badge>
+          </div>
+          <div className="flex flex-col items-start gap-3">
+            <VariantLabel>info</VariantLabel>
+            <Badge variant="info">Info</Badge>
+          </div>
+        </div>
+      </section>
+
+      {/* Button */}
+      <section className="page-container border-b border-wax/10 py-16">
+        <SectionLabel>Button</SectionLabel>
+        <div className="flex flex-wrap gap-6">
+          <div className="flex flex-col items-start gap-3">
+            <VariantLabel>primary</VariantLabel>
+            <Button variant="primary">Set an alert</Button>
+          </div>
+          <div className="flex flex-col items-start gap-3">
+            <VariantLabel>ghost</VariantLabel>
+            <Button variant="ghost">Keep watching</Button>
+          </div>
+          <div className="flex flex-col items-start gap-3">
+            <VariantLabel>destructive</VariantLabel>
+            <Button variant="destructive">Cancel alert</Button>
+          </div>
+          <div className="flex flex-col items-start gap-3">
+            <VariantLabel>link</VariantLabel>
+            <Button variant="link">View details</Button>
+          </div>
+        </div>
+      </section>
+
+      {/* Modal */}
+      <section className="page-container border-b border-wax/10 py-16">
+        <SectionLabel>Modal</SectionLabel>
+        <div className="flex flex-wrap gap-4">
+          <div className="flex flex-col items-start gap-3">
+            <VariantLabel>default</VariantLabel>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => { setModalVariant("default"); setModalOpen(true); }}
+            >
+              Open modal
+            </Button>
+          </div>
+          <div className="flex flex-col items-start gap-3">
+            <VariantLabel>destructive</VariantLabel>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => { setModalVariant("destructive"); setModalOpen(true); }}
+            >
+              Open destructive modal
+            </Button>
+          </div>
+        </div>
+        <Modal
+          isOpen={modalOpen}
+          title={modalVariant === "destructive" ? "Cancel this alert?" : "Confirm action"}
+          description={
+            modalVariant === "destructive"
+              ? "Once cancelled, you won't receive any more notifications for Trail Creek Cabin."
+              : "Are you sure you want to proceed with this action?"
+          }
+          confirmLabel={modalVariant === "destructive" ? "Yes, cancel alert" : "Confirm"}
+          onConfirm={() => setModalOpen(false)}
+          dismissLabel="Keep watching"
+          onDismiss={() => setModalOpen(false)}
+          variant={modalVariant}
+        />
       </section>
 
       {/* Field + TextInput */}

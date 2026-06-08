@@ -6,6 +6,8 @@ import Link from "next/link";
 import { ArrowUpRight, ChevronDown, ChevronUp, Pencil, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { formatCabinName, formatDateRange } from "@/lib/format";
+import { Modal } from "@/components/ui/modal";
+import { Badge } from "@/components/ui/badge";
 
 type Props = {
   alertId: string;
@@ -40,9 +42,23 @@ export function AlertCard({
   // triggered cards: toggles the metadata section (settings + location)
   const [metaVisible, setMetaVisible] = useState(true);
   const [cancelState, setCancelState] = useState<CancelState>("idle");
+  const [showCancelModal, setShowCancelModal] = useState(false);
 
   const isCancelling = cancelState !== "idle";
   const displayStatus = isCancelling ? "cancelled" : status;
+
+  const badgeVariantMap: Record<string, "default" | "accent" | "error"> = {
+    active: "default",
+    triggered: "accent",
+    cancelled: "error",
+  };
+  const badgeLabelMap: Record<string, string> = {
+    active: "Watching",
+    triggered: "Available",
+    cancelled: "Cancelled",
+  };
+  const badgeVariant = badgeVariantMap[displayStatus] ?? "default";
+  const badgeLabel = badgeLabelMap[displayStatus] ?? displayStatus;
   const dateRange = formatDateRange(dateFrom, dateTo);
   const flexLabel = flexibility === "flexible" ? "± 7 days" : "Strict";
 
@@ -108,7 +124,7 @@ export function AlertCard({
       </p>
       <button
         type="button"
-        onClick={handleCancel}
+        onClick={() => setShowCancelModal(true)}
         disabled={cancelState === "loading"}
         className="flex items-center gap-1 justify-center w-full hover:opacity-70 transition-opacity disabled:opacity-50"
       >
@@ -134,6 +150,7 @@ export function AlertCard({
   // Always expanded. Metadata section (settings + location) is separately togglable.
   if (isTriggered) {
     return (
+      <>
       <div
         className={`transition-opacity duration-700 ${cancelState === "fading" ? "opacity-0" : "opacity-100"}`}
       >
@@ -206,13 +223,23 @@ export function AlertCard({
               <div className="pt-16 px-10 flex flex-col gap-12">
                 {settingsRows}
                 {locationSection}
-                {/* Cancel — placement TBD */}
                 {cancelButton}
               </div>
             )}
           </div>
         </div>
       </div>
+      <Modal
+        isOpen={showCancelModal}
+        title="Cancel this alert?"
+        description={`Once cancelled, you won't receive any more notifications for ${formatCabinName(cabinName)}.`}
+        confirmLabel="Yes, cancel alert"
+        onConfirm={() => { setShowCancelModal(false); handleCancel(); }}
+        dismissLabel="Keep watching"
+        onDismiss={() => setShowCancelModal(false)}
+        variant="destructive"
+      />
+      </>
     );
   }
 
@@ -252,7 +279,7 @@ export function AlertCard({
             </div>
           </Link>
           <div className="flex items-center gap-3 shrink-0">
-            <StatusBadge status={displayStatus} />
+            <Badge variant={badgeVariant}>{badgeLabel}</Badge>
             {showChevronUp ? (
               <ChevronUp size={24} className="text-wax" />
             ) : (
@@ -266,29 +293,24 @@ export function AlertCard({
           <div className="px-30 py-15 flex flex-col gap-12">
             {settingsRows}
             {locationSection}
-            {/* Cancel — placement TBD */}
-            {cancelButton}
+            {status !== "cancelled" && cancelButton}
           </div>
         )}
       </div>
+      <Modal
+        isOpen={showCancelModal}
+        title="Cancel this alert?"
+        description={`Once cancelled, you won't receive any more notifications for ${formatCabinName(cabinName)}.`}
+        confirmLabel="Yes, cancel alert"
+        onConfirm={() => { setShowCancelModal(false); handleCancel(); }}
+        dismissLabel="Keep watching"
+        onDismiss={() => setShowCancelModal(false)}
+        variant="destructive"
+      />
     </div>
   );
 }
 
-function StatusBadge({ status }: { status: string }) {
-  const colorMap: Record<string, string> = {
-    active: "border-smoke/30 text-smoke",
-    triggered: "border-ember/50 text-ember",
-    cancelled: "border-smoke/20 text-smoke/50",
-  };
-  const color = colorMap[status] ?? "border-smoke/30 text-smoke";
-
-  return (
-    <div className={`border ${color} rounded-sm px-2 py-0.5`}>
-      <span className="text-data uppercase">{status}</span>
-    </div>
-  );
-}
 
 function SettingRow({ label, value }: { label: string; value: string }) {
   return (
