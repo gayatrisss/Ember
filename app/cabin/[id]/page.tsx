@@ -18,7 +18,7 @@ export default async function CabinPage({ params }: { params: Promise<Params> })
 
   const supabase = await createClient();
 
-  const [{ data: cabin }, { data: images }] = await Promise.all([
+  const [{ data: cabin }, { data: images }, { data: { user } }] = await Promise.all([
     supabase.from("cabins").select("*").eq("facility_id", id).single<Cabin>(),
     supabase
       .from("cabin_images")
@@ -27,6 +27,7 @@ export default async function CabinPage({ params }: { params: Promise<Params> })
       .order("is_primary", { ascending: false })
       .order("is_preview", { ascending: false })
       .returns<CabinImage[]>(),
+    supabase.auth.getUser(),
   ]);
 
   if (!cabin) notFound();
@@ -37,7 +38,7 @@ export default async function CabinPage({ params }: { params: Promise<Params> })
 
   return (
     <div className="min-h-screen bg-night flex flex-col">
-      <TopNav />
+      <TopNav email={user?.email ?? null} />
       <StatusBar facilityId={id} />
 
       <main className="flex-1 page-container pt-8 lg:pt-12 pb-page">

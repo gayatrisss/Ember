@@ -65,7 +65,7 @@ export default async function AlertsPage() {
 
   return (
     <div className="min-h-screen bg-night flex flex-col">
-      <TopNav />
+      <TopNav email={user?.email ?? null} />
       <main className="flex-1 page-container pt-8 lg:pt-12 pb-page">
         <h1 className="text-display-fraunces text-wax">Alerts</h1>
 

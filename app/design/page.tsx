@@ -145,31 +145,20 @@ export default function DesignPage() {
       {/* Badge */}
       <section className="page-container border-b border-wax/10 py-16">
         <SectionLabel>Badge</SectionLabel>
-        <div className="flex flex-wrap gap-4">
-          <div className="flex flex-col items-start gap-3">
-            <VariantLabel>default</VariantLabel>
-            <Badge variant="default">Watching</Badge>
-          </div>
-          <div className="flex flex-col items-start gap-3">
-            <VariantLabel>accent</VariantLabel>
-            <Badge variant="accent">Available</Badge>
-          </div>
-          <div className="flex flex-col items-start gap-3">
-            <VariantLabel>success</VariantLabel>
-            <Badge variant="success">Booked</Badge>
-          </div>
-          <div className="flex flex-col items-start gap-3">
-            <VariantLabel>warning</VariantLabel>
-            <Badge variant="warning">Expiring</Badge>
-          </div>
-          <div className="flex flex-col items-start gap-3">
-            <VariantLabel>error</VariantLabel>
-            <Badge variant="error">Cancelled</Badge>
-          </div>
-          <div className="flex flex-col items-start gap-3">
-            <VariantLabel>info</VariantLabel>
-            <Badge variant="info">Info</Badge>
-          </div>
+        <div className="flex flex-col gap-10">
+          {(["default", "accent", "error"] as const).map((type) => (
+            <div key={type}>
+              <VariantLabel>{type}</VariantLabel>
+              <div className="flex flex-wrap items-center gap-4">
+                <Badge type={type} fill="ghost">Watching</Badge>
+                <Badge type={type} fill="fill">Watching</Badge>
+                <Badge type={type} fill="ghost" size="small">Watching</Badge>
+                <Badge type={type} fill="fill" size="small">Watching</Badge>
+                <Badge type={type} fill="ghost" size="pill">Watching</Badge>
+                <Badge type={type} fill="fill" size="pill">Watching</Badge>
+              </div>
+            </div>
+          ))}
         </div>
       </section>
 

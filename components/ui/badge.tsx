@@ -1,27 +1,65 @@
 import { type ReactNode } from "react";
 
-type Variant = "default" | "accent" | "success" | "warning" | "error" | "info";
-
-const variantStyles: Record<Variant, string> = {
-  default: "border-smoke/30 text-smoke",
-  accent: "border-ember/50 text-ember",
-  success: "border-green-500/40 text-green-400",
-  warning: "border-amber-500/40 text-amber-400",
-  error: "border-red-500/40 text-red-400",
-  info: "border-blue-400/40 text-blue-400",
-};
+export type BadgeType = "default" | "accent" | "error";
+export type BadgeFill = "ghost" | "fill";
+export type BadgeSize = "default" | "small" | "pill";
 
 type Props = {
-  variant?: Variant;
+  type?: BadgeType;
+  fill?: BadgeFill;
+  size?: BadgeSize;
   children: ReactNode;
 };
 
-export function Badge({ variant = "default", children }: Props) {
+const shapeStyles: Record<BadgeSize, string> = {
+  default: "px-4 py-2 rounded-sm",
+  small:   "px-2 py-1 rounded-sm",
+  pill:    "px-2 py-1 rounded-full",
+};
+
+const ghostBorderWidth: Record<BadgeSize, string> = {
+  default: "border-2",
+  small:   "border",
+  pill:    "border",
+};
+
+const ghostBorderColor: Record<BadgeType, string> = {
+  default: "border-smoke/30",
+  accent:  "border-ember-selected",
+  error:   "border-red-600",
+};
+
+const ghostTextColor: Record<BadgeType, string> = {
+  default: "text-smoke",
+  accent:  "text-ember",
+  error:   "text-red-400",
+};
+
+const fillBg: Record<BadgeType, string> = {
+  default: "bg-smoke",
+  accent:  "bg-ember",
+  error:   "bg-red-600",
+};
+
+const textStyle: Record<BadgeSize, string> = {
+  default: "text-data font-medium",
+  small:   "text-data font-medium",
+  pill:    "text-label",
+};
+
+export function Badge({ type = "default", fill = "ghost", size = "default", children }: Props) {
+  const shape = shapeStyles[size];
+  const text = `${textStyle[size]} uppercase leading-none`;
+
+  const containerStyles = fill === "ghost"
+    ? `${shape} ${ghostBorderWidth[size]} ${ghostBorderColor[type]}`
+    : `${shape} ${fillBg[type]}`;
+
+  const textColor = fill === "ghost" ? ghostTextColor[type] : "text-wax";
+
   return (
-    <div
-      className={`inline-flex items-center border border-2 rounded-sm px-4 py-2 ${variantStyles[variant]}`}
-    >
-      <span className="text-data font-bold tracking-widest uppercase leading-none">{children}</span>
+    <div className={`inline-flex items-center justify-center ${containerStyles}`}>
+      <span className={`${text} ${textColor}`}>{children}</span>
     </div>
   );
 }

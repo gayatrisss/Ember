@@ -48,7 +48,7 @@ export function AlertCard({
   const isCancelling = cancelState !== "idle";
   const displayStatus = isCancelling ? "cancelled" : status;
 
-  const badgeVariantMap: Record<string, "default" | "accent" | "error"> = {
+  const badgeTypeMap: Record<string, "default" | "accent" | "error"> = {
     active: "default",
     triggered: "accent",
     cancelled: "error",
@@ -58,7 +58,7 @@ export function AlertCard({
     triggered: "Available",
     cancelled: "Cancelled",
   };
-  const badgeVariant = badgeVariantMap[displayStatus] ?? "default";
+  const badgeType = badgeTypeMap[displayStatus] ?? "default";
   const badgeLabel = badgeLabelMap[displayStatus] ?? displayStatus;
   const dateRange = formatDateRange(dateFrom, dateTo);
   const flexLabel = flexibility === "flexible" ? "± 7 days" : "Strict";
@@ -93,7 +93,7 @@ export function AlertCard({
   const locationSection = (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
-        <p className="text-data text-smoke uppercase">Location</p>
+        <p className="text-label text-wax-muted uppercase">Map</p>
         <a
           href={`https://www.recreation.gov/camping/campgrounds/${facilityId}`}
           target="_blank"
@@ -101,34 +101,29 @@ export function AlertCard({
           className="flex items-center gap-1 hover:opacity-70 transition-opacity"
         >
           <span className="text-label text-wax-muted uppercase underline underline-offset-2">
-            View on Recreation.gov
+            Recreation.gov
           </span>
           <ArrowUpRight size={16} className="text-wax-muted" />
         </a>
       </div>
-      <div className="rounded-lg bg-smoke/10 h-40 flex items-center justify-center">
+      <div className="rounded-lg bg-smoke/10 h-24 lg:h-40 flex items-center justify-center">
         <p className="text-label text-smoke">Map coming soon</p>
       </div>
     </div>
   );
 
   const cancelButton = (
-    <div className="flex flex-col gap-3 items-center pt-6 w-full">
-      <p className="text-body text-wax-muted">
-        No longer interested in {formatCabinName(cabinName)}?
-      </p>
-      <button
-        type="button"
-        onClick={() => setShowCancelModal(true)}
-        disabled={cancelState === "loading"}
-        className="flex items-center gap-1 justify-center w-full hover:opacity-70 transition-opacity disabled:opacity-50"
-      >
-        <span className="text-label text-ember-selected uppercase underline underline-offset-2 tracking-wider">
-          Cancel alert
-        </span>
-        <Trash2 size={16} className="text-ember-selected" />
-      </button>
-    </div>
+    <button
+      type="button"
+      onClick={() => setShowCancelModal(true)}
+      disabled={cancelState === "loading"}
+      className="flex items-center gap-2 justify-center w-full hover:opacity-70 transition-opacity disabled:opacity-50"
+    >
+      <span className="text-label text-ember-selected uppercase underline underline-offset-2 tracking-wider">
+        Cancel alert
+      </span>
+      <Trash2 size={16} className="text-ember-selected" />
+    </button>
   );
 
   const thumbnail = imageUrl ? (
@@ -147,7 +142,10 @@ export function AlertCard({
       title="Cancel this alert?"
       description={`Once cancelled, you won't receive any more notifications for ${formatCabinName(cabinName)}.`}
       confirmLabel="Yes, cancel alert"
-      onConfirm={() => { setShowCancelModal(false); handleCancel(); }}
+      onConfirm={() => {
+        setShowCancelModal(false);
+        handleCancel();
+      }}
       dismissLabel="Keep watching"
       onDismiss={() => setShowCancelModal(false)}
       variant="destructive"
@@ -161,7 +159,9 @@ export function AlertCard({
         <motion.div
           animate={{ opacity: cancelState === "fading" ? 0 : 1 }}
           transition={{ duration: 0.35 }}
-          onAnimationComplete={() => { if (cancelState === "fading") router.refresh(); }}
+          onAnimationComplete={() => {
+            if (cancelState === "fading") router.refresh();
+          }}
         >
           <div className="bg-evergreen rounded-lg overflow-hidden">
             <div className="bg-ash h-alert-header flex items-center justify-between px-6">
@@ -181,9 +181,7 @@ export function AlertCard({
                   >
                     {formatCabinName(cabinName)}
                   </Link>
-                  {recAreaName && (
-                    <p className="text-body text-wax-muted">{recAreaName}</p>
-                  )}
+                  {recAreaName && <p className="text-body text-wax-muted">{recAreaName}</p>}
                 </div>
                 <div className="flex flex-col gap-2 items-end shrink-0">
                   <p className="text-label text-wax-muted uppercase">Dates Watching</p>
@@ -208,9 +206,7 @@ export function AlertCard({
                   <span className="text-body text-wax">
                     {metaVisible ? "Hide" : "Show"} alert details
                   </span>
-                  <span className="text-body text-wax-muted">
-                    settings, history, and more
-                  </span>
+                  <span className="text-body text-wax-muted">settings, history, and more</span>
                 </div>
                 <motion.div
                   animate={{ rotate: metaVisible ? 180 : 0 }}
@@ -249,18 +245,101 @@ export function AlertCard({
   // ─── Currently Watching / Past Alerts (active | cancelled) ──────────────────
   const showBody = expanded && !isCancelling;
 
+  // Mobile overlay badge: always fill for visibility against the photo
+  const mobileBadgeTypeMap: Record<string, "accent" | "error"> = {
+    active: "accent",
+    triggered: "accent",
+    cancelled: "error",
+  };
+  const mobileBadgeType = mobileBadgeTypeMap[displayStatus] ?? "accent";
+
   return (
     <>
       <motion.div
         animate={{ opacity: cancelState === "fading" ? 0 : 1 }}
         transition={{ duration: 0.35 }}
-        onAnimationComplete={() => { if (cancelState === "fading") router.refresh(); }}
+        onAnimationComplete={() => {
+          if (cancelState === "fading") router.refresh();
+        }}
       >
-        <div className="bg-evergreen rounded-lg overflow-hidden">
-          <div
-            className={`p-5 flex items-center justify-between ${!isCancelling ? "cursor-pointer" : "cursor-default"}`}
-            onClick={() => !isCancelling && setExpanded(!expanded)}
-          >
+        {/* ── Mobile card ── */}
+        <div className="lg:hidden bg-evergreen rounded-lg overflow-hidden">
+          {/* Photo header */}
+          <div className="relative w-full aspect-[3/2] overflow-hidden">
+            {imageUrl && (
+              <Image src={imageUrl} alt={cabinName} fill sizes="100vw" className="object-cover" />
+            )}
+            <div className="absolute top-4 left-4">
+              <Badge type={mobileBadgeType} fill="fill">
+                {badgeLabel}
+              </Badge>
+            </div>
+          </div>
+
+          {/* Card body */}
+          <div className="p-4">
+            {/* Name + location + dates */}
+            <div className="flex flex-col gap-2">
+              {recAreaName && <p className="text-data text-wax-muted uppercase">{recAreaName}</p>}
+              <Link
+                href={`/cabin/${facilityId}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-display-fraunces-sm text-wax hover:opacity-80 transition-opacity"
+              >
+                {formatCabinName(cabinName)}
+              </Link>
+              <p className="text-body text-wax-muted">{dateRange}</p>
+            </div>
+
+            {/* Expanded content */}
+            <AnimatePresence initial={false}>
+              {showBody && (
+                <motion.div
+                  key="mobile-body"
+                  className="overflow-hidden"
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: "auto", opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.3, ease: expandEase }}
+                >
+                  <div className="flex flex-col gap-12 mt-12">
+                    {settingsRows}
+                    {status !== "cancelled" && cancelButton}
+                    {locationSection}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* See / Hide toggle — always visible */}
+            <div className="mt-8 border-t border-wax-muted/20">
+              <button
+                type="button"
+                onClick={() => !isCancelling && setExpanded(!expanded)}
+                disabled={isCancelling}
+                className="w-full pt-4 flex items-center justify-center gap-2"
+              >
+                <span className="text-label text-wax-muted uppercase">
+                  {showBody ? "Hide Alert Details" : "See Alert Details"}
+                </span>
+                <motion.div
+                  animate={{ rotate: showBody ? 180 : 0 }}
+                  transition={{ duration: 0.3, ease: expandEase }}
+                >
+                  <ChevronDown size={16} className="text-wax-muted" />
+                </motion.div>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* ── Desktop card ── */}
+        <div
+          className={`hidden lg:block bg-evergreen rounded-lg overflow-hidden ${!isCancelling ? "cursor-pointer" : "cursor-default"}`}
+          onClick={() => !isCancelling && setExpanded(!expanded)}
+        >
+          <div className="flex p-5 items-center justify-between">
             <Link
               href={`/cabin/${facilityId}`}
               target="_blank"
@@ -272,16 +351,14 @@ export function AlertCard({
                 {thumbnail}
               </div>
               <div className="flex flex-col gap-2">
-                <p className="text-display-fraunces-sm text-white">
-                  {formatCabinName(cabinName)}
-                </p>
+                <p className="text-display-fraunces-sm text-white">{formatCabinName(cabinName)}</p>
                 <p className="text-body text-wax-muted">
                   {recAreaName ? `${recAreaName} · ${dateRange}` : dateRange}
                 </p>
               </div>
             </Link>
             <div className="flex items-center gap-3 shrink-0">
-              <Badge variant={badgeVariant}>{badgeLabel}</Badge>
+              <Badge type={badgeType}>{badgeLabel}</Badge>
               <motion.div
                 animate={{ rotate: showBody ? 180 : 0 }}
                 transition={{ duration: 0.3, ease: expandEase }}
@@ -294,7 +371,7 @@ export function AlertCard({
           <AnimatePresence initial={false}>
             {showBody && (
               <motion.div
-                key="body"
+                key="desktop-body"
                 className="overflow-hidden"
                 initial={{ height: 0, opacity: 0 }}
                 animate={{ height: "auto", opacity: 1 }}
@@ -322,7 +399,7 @@ function SettingRow({ label, value }: { label: string; value: string }) {
       <p className="text-label text-wax-muted uppercase">{label}</p>
       <div className="flex items-center gap-3">
         <p className="text-body text-wax">{value}</p>
-        <Pencil size={16} className="text-smoke/60" />
+        <Pencil size={16} className="text-wax" />
       </div>
     </div>
   );
