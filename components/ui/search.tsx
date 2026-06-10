@@ -3,38 +3,13 @@
 import { useEffect, useRef, useState } from "react";
 import { Home, Loader2, Search as SearchIcon } from "lucide-react";
 import { Command as CommandPrimitive } from "cmdk";
-import Fuse, { type IFuseOptions } from "fuse.js";
 import { Field } from "@/components/ui/field";
-import { createClient } from "@/lib/supabase/client";
-
-const supabase = createClient();
-
-type Cabin = { id: string; name: string; area: string | null };
-
-const PAGE = 6;
-
-const FUSE_OPTIONS: IFuseOptions<Cabin> = {
-  keys: [
-    { name: "name", weight: 0.7 },
-    { name: "area", weight: 0.3 },
-  ],
-  threshold: 0.3,
-  minMatchCharLength: 2,
-  shouldSort: true,
-  ignoreLocation: false,
-  distance: 200,
-};
-
-function toTitleCase(str: string): string {
-  return str.toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
-}
+import { useCabinSearch } from "@/components/ui/use-cabin-search";
+import { formatCabinName } from "@/lib/format";
 
 export function Search() {
-  const [query, setQuery] = useState("");
+  const { query, setQuery, ready, q, visibleResults, hasMore, handleScroll } = useCabinSearch();
   const [open, setOpen] = useState(false);
-  const [fuse, setFuse] = useState<Fuse<Cabin> | null>(null);
-  // Track { q, count } together so resetting on query change needs no useEffect
-  const [page, setPage] = useState({ q: "", count: PAGE });
   const containerRef = useRef<HTMLDivElement>(null);
 
   let inputBorderClass = "border-b-wax/20 hover:border-b-wax/40";
@@ -46,20 +21,6 @@ export function Search() {
   if (open) inputTextClass = "text-ember placeholder:text-ember/50";
 
   useEffect(() => {
-    supabase
-      .from("cabins")
-      .select("facility_id, facility_name, rec_area_name")
-      .then(({ data }) => {
-        const cabins: Cabin[] = (data ?? []).map((row) => ({
-          id: row.facility_id as string,
-          name: row.facility_name as string,
-          area: row.rec_area_name as string | null,
-        }));
-        setFuse(new Fuse(cabins, FUSE_OPTIONS));
-      });
-  }, []);
-
-  useEffect(() => {
     function onDown(e: MouseEvent) {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
         setOpen(false);
@@ -68,21 +29,6 @@ export function Search() {
     document.addEventListener("mousedown", onDown);
     return () => document.removeEventListener("mousedown", onDown);
   }, []);
-
-  const q = query.trim();
-  const allResults: Cabin[] = fuse && q.length >= 2 ? fuse.search(q).map((r) => r.item) : [];
-
-  // When q changes, count resets to PAGE automatically
-  const visibleCount = page.q === q ? page.count : PAGE;
-  const visibleResults = allResults.slice(0, visibleCount);
-  const hasMore = visibleCount < allResults.length;
-
-  function handleScroll(e: React.UIEvent<HTMLDivElement>) {
-    const { scrollTop, clientHeight, scrollHeight } = e.currentTarget;
-    if (hasMore && scrollTop + clientHeight >= scrollHeight - 40) {
-      setPage({ q, count: visibleCount + PAGE });
-    }
-  }
 
   const showDropdown = open && q.length > 0;
 
@@ -98,7 +44,7 @@ export function Search() {
           <div
             className={["field-control", inputBorderClass].join(" ")}
           >
-            {!fuse ? (
+            {!ready ? (
               <Loader2 size={16} className="shrink-0 text-smoke animate-spin" />
             ) : (
               <SearchIcon
@@ -144,7 +90,7 @@ export function Search() {
                           <Home size={14} className="text-ember" />
                         </div>
                         <div className="min-w-0">
-                          <div className="text-body text-wax">{toTitleCase(cabin.name)}</div>
+                          <div className="text-body text-wax">{formatCabinName(cabin.name)}</div>
                           {cabin.area && (
                             <div className="text-label text-smoke truncate">{cabin.area}</div>
                           )}

@@ -73,14 +73,14 @@
     text-shadow: 0px 0px 6px var(--color-ember);
   }
 
-  /* Fraunces at 40px — nav wordmark only */
+  /* Fraunces at 48px — nav wordmark only */
   .text-display-fraunces-nav {
     font-family: var(--font-display);
     font-style: italic;
     font-weight: 700;
-    font-size: 40px;
+    font-size: 48px;
     line-height: 1;
-    font-variation-settings: "opsz" 96;
+    font-variation-settings: "SOFT" 0, "WONK" 1, "opsz" 96;
     font-feature-settings: normal;
     -webkit-font-smoothing: antialiased;
   }

@@ -147,13 +147,18 @@ All tokens in `app/theme.css` inside `@theme {}`. Use as Tailwind utilities.
 ### Colors
 | Token | Hex | Usage |
 |---|---|---|
-| `night` | `#0f1510` | Page background |
-| `evergreen` | `#1a241b` | Cards, elevated surfaces |
+| `night` | `#0f1510` | Dark surfaces (listing page, alerts dashboard bg) |
+| `evergreen` | `#1a241b` | Landing page base, cards, elevated surfaces |
 | `ember` | `#d45a20` | Brand accent, CTAs |
 | `ember-selected` | `#b24c1b` | Calendar selected dates (80% brightness) |
 | `ember-range` | `#803913` | Calendar in-range / hover bg (50% brightness) |
-| `smoke` | `#5f7a8a` | Muted text |
+| `smoke` | `#5f7a8a` | Muted text, avatar bg |
 | `wax` | `#ede8dc` | Primary text |
+| `wax-muted` | `#b2afa6` | Secondary labels on cards |
+| `ash` | `#171a17` | Nav scrolled bg, auth pill + dropdown surface |
+| `slate` | `#6d736e` | Muted text/icons on light (wax) surfaces — e.g. nav search bar |
+
+`--container-nav-search: 600px` — max-width of the centered nav search bar. (Note: `max-w-*` named utilities require a `--container-*` token in Tailwind v4, **not** `--width-*`, which only powers `w-*`.)
 
 ### Type scale (locked — never use `text-[Xpx]`)
 | Class | Usage |
@@ -173,6 +178,10 @@ All tokens in `app/theme.css` inside `@theme {}`. Use as Tailwind utilities.
 - Grids always start `grid-cols-1`, add breakpoint columns on top.
 - Fixed widths always have a `w-full` base: `w-full lg:w-sidebar`.
 
+### Backgrounds
+- Landing page: `bg-evergreen bg-page-glow`. The `bg-page-glow` token is two ember radial gradients: bottom-left (26%, 130%) at 0.5 opacity and bottom-right (105%, 108%) at 0.4 opacity.
+- All other pages (listing, alerts dashboard): `bg-night`.
+
 ### Shadows
 `shadow-ember-sm` / `shadow-ember-md` / `shadow-ember-lg`
 
@@ -182,13 +191,15 @@ All tokens in `app/theme.css` inside `@theme {}`. Use as Tailwind utilities.
 
 ### `components/ui/` — reusable primitives
 - `field.tsx` — `<Field>` (label below input) + `<FieldControl>` (non-input variant)
-- `auth-button.tsx` — nav auth state. Shows email + "Sign out" when logged in, "Log in" (Google OAuth) when logged out. Uses `onAuthStateChange`.
+- `auth-button.tsx` — nav auth state. Props: `email: string | null`, `name: string | null` (from `user.user_metadata.full_name`). **Logged out:** ember-filled "Log in" pill (`bg-ember p-4 rounded-lg`). **Logged in:** dark trigger pill (`bg-ash p-4 rounded-xl`) = avatar + first name + static down-chevron. **Opens on hover** (`onMouseEnter`/`onMouseLeave`; click = touch/keyboard fallback). The button is the single header (never animates); only the menu (divider + Log out) drops in below — button `rounded-t-xl` when open, menu `absolute top-full left-0 right-0 rounded-b-xl` animating `opacity + y:-6→0`, so they read as one continuous pill. Outside-click closes via `mousedown` listener.
 - `calendar-input.tsx` — date range picker. Props: `checkIn`, `checkOut`, `onChange`, `availableDates?`, `fetchedMonths?`, `onMonthChange?`. Root is `w-fit mx-auto`.
 - `date-cell.tsx` — calendar cell primitive. States: `default`, `disabled`, `unavailable`, `day`, `hover`, `selected`, `in-range`. `unavailable` = booked/not-open, clickable with dot indicator. `disabled` = past dates or before selected start, non-interactive.
 - `booking-panel.tsx` — shell for booking flows: `h-[600px]`, `p-9`, title + `flex-1` content + sticky CTA slot.
 - `availability-panel.tsx` — full booking widget. Fetches rec.gov availability, calendar with date states, three CTA states (book / alert / reminder), alert-setup + reminder-setup + confirmed views. Auth-gated: triggers Google OAuth if not signed in, restores view+dates from URL params after redirect.
 - `spinner.tsx` — `<Spinner size={24} />` centered loading indicator.
-- `search.tsx` — search bar used in landing + search page
+- `use-cabin-search.ts` — headless cabin-search hook. Loads cabin list + builds Fuse index **once at module level** (shared singleton across all consumers). Returns `query/setQuery/ready/q/visibleResults/hasMore/handleScroll`. No UI.
+- `search.tsx` — vertical cabin autocomplete (landing `AlertForm`). Consumes `useCabinSearch`. cmdk input + dark dropdown, infinite scroll. Navigates to `/cabin/{id}` in a new tab on select.
+- `nav-search.tsx` — `<NavSearch />`, the horizontal joint bar in the scrolled top nav. Consumes `useCabinSearch`. Owns `selectedCabin`/`checkIn`/`checkOut`/`popover`. Left = cabin autocomplete (commits cabin, dark dropdown); right = `CalendarInput` popover (evergreen, no availability data) + ember submit arrow (disabled until a cabin is picked; **dates optional**). Submit → `router.push('/cabin/{id}?checkIn=YYYY-MM-DD&checkOut=YYYY-MM-DD')`, params omitted when no dates. `AvailabilityPanel` reads these params and pre-selects the range.
 - `status-bar.tsx` — "● last checked Xs ago" + rec.gov link bar
 - `toggle-options.tsx`, `radio-options.tsx` — form toggle primitives
 - `confirmation-animations.tsx` — success state animations
@@ -201,6 +212,8 @@ All tokens in `app/theme.css` inside `@theme {}`. Use as Tailwind utilities.
 
 ### `components/landing/` — page-section components (non-reusable)
 `top-nav.tsx`, `hero.tsx`, `alert-form.tsx`, `lately-on-ember.tsx`, `activity-card.tsx`, `how-it-works.tsx`, `footer.tsx`
+
+**`top-nav.tsx`** — props: `email: string | null`, `name: string | null`. Fixed, `z-50`, `h-20` spacer sibling. **Above-fold (default):** transparent bg; left group = logo (`text-display-fraunces-nav`, 48px Fraunces with SOFT/WONK axes) + EXPLORE + ALERTS links (`flex gap-[60px]` uppercase); right = `<AuthButton>`. **Scrolled (>400px):** `bg-ash backdrop-blur-sm`; links fade out and the **`<NavSearch>` bar fades in absolutely-centered** in the nav (`absolute left-1/2 -translate-x-1/2`, `w-full max-w-nav-search` capped 600px) via `AnimatePresence` (`opacity + y`). Mobile (below `md`): logo + auth only, no search.
 
 **Always check `components/ui/` before building any new element.**
 

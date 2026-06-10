@@ -7,7 +7,66 @@
 
 ## Current phase
 **Build phase — Week 3**
-Landing page live. Listing page live with real availability data. Google OAuth fully wired. Alert save fully wired. `/my-alerts` dashboard page in progress — shell + AlertCard built, next: cancel alert action + expanded row details.
+Landing page live. Listing page live with real availability data. Google OAuth fully wired. Alert save fully wired. `/my-alerts` dashboard complete — AlertCard (mobile + desktop, expanded + collapsed states), cancel action, badge system. Top nav redesigned with scroll transition.
+
+## Last session (2026-06-10)
+
+### Profile dropdown (auth-button) — hover + Figma match
+- **`components/ui/auth-button.tsx`** — logged-in profile pill now opens the log-out menu **on hover** (`onMouseEnter`/`onMouseLeave` on wrapper; click retained as touch/keyboard fallback).
+- Restructured to kill a double-render flicker: the **button is the single header** (never animates); only the **menu portion** (divider + Log out) drops down. Button gets `rounded-t-xl` when open, menu is `absolute top-full left-0 right-0 rounded-b-xl`, animates `opacity + y:-6→0` (search-bar style) so the two ash blocks read as one continuous pill.
+- Chevron stays pointing **down** in both states (Figma 3557-4105 collapsed / 3557-4021 expanded). Divider = `border-smoke/30`.
+
+### Page background → evergreen + ember glow
+- **`app/theme.css`** `--background-image-page-glow` = two ember radial gradients (bottom-left 26%/130% @0.5, bottom-right 105%/108% @0.4). Landing uses `bg-evergreen bg-page-glow`; other pages `bg-night`.
+
+### Nav search bar — centered + sized + WIRED UP (the big one)
+- **Placement:** search is now **absolutely centered** in the nav (`absolute left-1/2 top-1/2 -translate-x/y-1/2`), separate from the left-group links. Figma frame 2902-2103 centers at page-center.
+- **Size:** `w-full max-w-nav-search`, capped **600px**. ⚠️ Token is `--container-nav-search` (NOT `--width-*`) — see Known mistakes.
+- **New `--color-slate: #6d736e`** — muted text/icons on light (wax) surfaces. Search bar text + search/calendar icons use `text-slate` (was the bluer `text-smoke`).
+- **`components/ui/use-cabin-search.ts`** (NEW) — headless hook: loads cabin list + builds Fuse index **once at module level** (shared singleton, so landing's two consumers don't double-fetch). Exposes `query/setQuery/ready/q/visibleResults/hasMore/handleScroll`.
+- **`components/ui/search.tsx`** — rebased onto the hook (behavior unchanged, still navigates-on-select new tab). Dropped private `toTitleCase` → `formatCabinName`.
+- **`components/ui/nav-search.tsx`** (NEW) — the joint horizontal bar. Owns `selectedCabin`/`checkIn`/`checkOut`/`popover`. Left = cabin autocomplete (commits cabin, no nav); right = `CalendarInput` popover (no availability data); arrow = submit, **disabled until a cabin is picked, dates optional**. On submit → `router.push('/cabin/{id}?checkIn=YYYY-MM-DD&checkOut=YYYY-MM-DD')` (params omitted if no dates).
+- **Cabin page needs ZERO changes** — `AvailabilityPanel` already reads `?checkIn/?checkOut` and pre-selects + evaluates availability (built for the OAuth round-trip).
+
+### Open follow-ups for tomorrow
+1. **Test in browser** — `.next` was cleared; restart `npm run dev`, scroll past 400px, run a full search → cabin page.
+2. **Landing `AlertForm` still on old model** (Search navigates on select; its dates feed the alert, not a joint search). Decide whether to mirror the nav's joint model there.
+3. **Optional polish:** `AvailabilityPanel` renders `CalendarInput` without `initialMonth`/`initialYear`, so future-month restored dates open on *today* with selection off-screen. 2-line fix to open on `checkIn`'s month.
+4. Deferred filled-state styling reconciliation already partly done (gap-6, 24px arrow now in nav-search).
+
+## Last session (2026-06-09)
+
+### Top nav — complete redesign
+- **`components/landing/top-nav.tsx`** — rewritten as `"use client"` with scroll detection (`SCROLL_THRESHOLD = 400`).
+- Fixed `fixed top-0 left-0 right-0 z-50` with `h-20` spacer sibling div for page offset.
+- **Default state:** transparent bg, logo left | Explore + Alerts links center (24px icons, gap-12) | auth right.
+- **Scrolled state:** `bg-night/95 backdrop-blur-sm border-b border-wax/5`, links crossfade to inline search bar (wax pill: search icon + location + divider + calendar + ember arrow button).
+- Framer Motion `AnimatePresence mode="wait"` with y-direction fade between the two center states.
+- Mobile: logo + auth only (no links, no search bar) per AGENTS.md convention.
+- Logo is now a `<Link href="/">` with ember `text-shadow` glow on hover (`logo-glow-hover` class in `utilities.css`).
+
+### Auth — server-side, no more flicker
+- **`app/page.tsx`** — made `async`, fetches `supabase.auth.getUser()` server-side, passes `email` to `<TopNav>`.
+- **`app/my-alerts/page.tsx`** — already fetched user; now passes `email` to `<TopNav>`.
+- **`app/cabin/[id]/page.tsx`** — added `auth.getUser()` to existing `Promise.all`, passes `email` to `<TopNav>`.
+- **`components/landing/top-nav.tsx`** — accepts `email: string | null` prop, passes to `AuthButton`.
+- **`components/ui/auth-button.tsx`** — rewrote: accepts `email` prop, no `useEffect`/loading state. Uses `router.refresh()` after sign-out to re-run server fetch. Zero flicker on load.
+
+### Badge system redesign
+- **`components/ui/badge.tsx`** — full rewrite with 3-axis system: `type` (default/accent/error), `fill` (ghost/fill), `size` (default/small/pill).
+- All styles via lookup maps (no nested ternaries). Ghost uses border-only; fill uses solid bg.
+- `ghost` default badge: `border-smoke/30 text-smoke`. Accent: `border-ember-selected text-ember`. Error: `border-red-600 text-red-400`.
+- `fill` default: `bg-smoke`. Accent: `bg-ember`. Error: `bg-red-600`. All fill text: `text-wax`.
+- `/design` page updated — 3×6 badge matrix (type × fill+size combinations).
+
+### AlertCard — mobile layout
+- **`components/alerts/alert-card.tsx`** — two separate DOM elements: `lg:hidden` mobile card / `hidden lg:block` desktop card, sharing `expanded` state.
+- **Mobile collapsed:** full-width `aspect-[3/2]` landscape photo header → card body with rec area (text-data uppercase), Fraunces cabin name (link), date range (text-body).
+- **Mobile badge overlay:** top-left `absolute top-4 left-4`, always `fill` variant for photo visibility. `active/triggered → accent fill`, `cancelled → error fill`.
+- **Mobile expanded:** AnimatePresence height animate, settings rows + cancel button + map section revealed. Toggle button at bottom with ChevronDown rotation.
+- **Desktop:** unchanged — thumbnail row, click to expand, `px-30 py-15` body.
+- Map label: `text-wax-muted` (not smoke) — reinforced this rule.
+- Clickable Pencil icons: `size={24}` (not 16).
 
 ## Last session (2026-06-08)
 
@@ -116,14 +175,14 @@ Stripped all `auth.*` session data from `supabase/seed.sql`. Now contains only `
 - To resume local dev: open Docker Desktop, run `supabase start`, then `npm run dev`
 
 ## Next tasks (priority order)
-1. **Alert dashboard — cancel action** — PATCH `/api/alerts/[id]`, optimistic CANCELLED badge → fade out after 2.5s
-2. **Alert dashboard — expanded row** — chevron expand: dates watching, "± 7 days" flexibility (hardcoded), map placeholder, cancel button
-3. **Alert dashboard — notifications empty state** — "Keep an eye out here for notifications regarding availability" in the Needs Attention section
+1. **AlertCard — triggered (Needs Attention) mobile layout** — triggered card has no mobile treatment yet; desktop shows a header strip + "Keep an eye out" copy
+2. **Fraunces font rendering** — `text-display-fraunces-sm` looks different in browser vs Figma (tabled). Try adding `"SOFT" 0, "WONK" 1` to `font-variation-settings` in `utilities.css`. Axes are already loaded in `layout.tsx`.
+3. **Nav search bar — ✅ WIRED (2026-06-10)** — needs browser test + decide whether landing `AlertForm` adopts the same joint model (see today's follow-ups)
 4. **Listing page polish** — mobile layout, description text, image gallery
-5. **Search / Map page** — lat/lng ready in Supabase
+5. **Search / Map page** — lat/lng ready in Supabase; nav has a map page nav design too (hamburger + user dropdown — separate Figma nodes). The nav search's "region → map" branch is intentionally deferred (dropdown is cabin-only for now).
 
 ## Decisions log (stable — do not re-litigate)
-- Search: Supabase + fuse.js client-side, all 519 cabins loaded on mount, opens in new tab
+- Search: Supabase + fuse.js client-side, all 519 cabins loaded on mount. Core extracted to `useCabinSearch()` hook (module-level shared Fuse singleton). Landing `<Search>` opens cabin in new tab on select; nav `<NavSearch>` commits cabin then submits via arrow to `/cabin/{id}?checkIn&checkOut` (same tab, dates optional).
 - Availability: live call to rec.gov's undocumented internal API. **Known risk: endpoint can vanish without notice.** Acceptable for portfolio demo.
 - Route: `/cabin/[id]` — `id` param = `facility_id` from RIDB/Supabase
 - Auth: Google OAuth via Supabase. Email from `auth.users.email` — no manual contact input.
@@ -165,6 +224,9 @@ SUPABASE_SERVICE_KEY            # seed/ingest scripts only — not committed
 - Use `update()` not `upsert()` for Supabase rows that already exist
 - Python < 3.10: use `Optional[X]` not `X | None` for type hints
 - Delete superseded files immediately — verify with grep before deleting
+- **Tailwind v4 token namespaces:** `--width-*` only generates `w-*` utilities; **`max-w-*` named utilities come from `--container-*`**. A `max-w-<token>` built on `--width-*` silently compiles to nothing. (The existing `max-w-copy`/`max-w-copy-wide` on `--width-copy` are latent no-ops — pre-existing bug.)
+- **Don't run `npm run build` while `npm run dev` is running** — the prod build overwrites `.next/dev/*` manifests and crashes the dev server. Use `npx tsc --noEmit` + `npm run lint` to verify instead.
+- Supabase query builder `.then()` returns a `PromiseLike`, not a `Promise` — wrap in an `async` fn if you need real Promise methods (`.catch`, etc.)
 
 ## Build status
 | Page | Design | Code | Deployed |
@@ -172,5 +234,5 @@ SUPABASE_SERVICE_KEY            # seed/ingest scripts only — not committed
 | Landing | ✅ | ✅ | ✅ |
 | Listing | ✅ | ✅ | 🔲 |
 | Search / Map | ✅ | 🔲 | 🔲 |
-| Alert dashboard | ✅ | 🔧 | 🔲 |
+| Alert dashboard | ✅ | ✅ | 🔲 |
 | Email templates | 🔲 | 🔲 | 🔲 |

@@ -13,8 +13,8 @@ export default async function Home() {
 
   return (
     <>
-      <div className="bg-night bg-page-glow">
-        <TopNav email={user?.email ?? null} />
+      <div className="bg-evergreen bg-page-glow">
+        <TopNav email={user?.email ?? null} name={user?.user_metadata?.full_name ?? null} />
         <Hero />
         <LatelyOnEmber />
         <HowItWorks />

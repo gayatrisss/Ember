@@ -15,6 +15,7 @@
   --color-wax: #ede8dc;
   --color-wax-muted: #b2afa6;
   --color-ash: #171a17;          /* Expanded alert card header strip surface */
+  --color-slate: #6d736e;        /* Muted text/icons on light (wax) surfaces — e.g. nav search */
 
   /* === Typography === */
   --font-display: var(--font-fraunces);
@@ -30,6 +31,7 @@
   --width-copy: 280px;
   --width-copy-wide: 300px;
   --width-sidebar: 440px;
+  --container-nav-search: 600px;   /* max-width of the centered nav search bar */
   --width-alert-thumb: 106px;
   --height-alert-thumb: 71px;
   --height-alert-header: 46px;   /* Expanded alert card header strip */
@@ -41,9 +43,8 @@
   --shadow-ember-lg: 0 0 120px -20px rgb(212 90 32 / 0.15);
 
   /* === Backgrounds === */
-  --background-image-page-glow: radial-gradient(
-    ellipse at bottom,
-    rgb(212 90 32 / 0.22) 0%,
-    rgb(15 21 16 / 0) 60%
-  );
+  /* Two ember glows from bottom-left and bottom-right, over an evergreen base */
+  --background-image-page-glow:
+    radial-gradient(ellipse at 26% 130%, rgb(212 90 32 / 0.5) 0%, transparent 55%),
+    radial-gradient(ellipse at 105% 108%, rgb(212 90 32 / 0.4) 0%, transparent 55%);
 }

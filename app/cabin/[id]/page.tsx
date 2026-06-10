@@ -38,7 +38,7 @@ export default async function CabinPage({ params }: { params: Promise<Params> })
 
   return (
     <div className="min-h-screen bg-night flex flex-col">
-      <TopNav email={user?.email ?? null} />
+      <TopNav email={user?.email ?? null} name={user?.user_metadata?.full_name ?? null} />
       <StatusBar facilityId={id} />
 
       <main className="flex-1 page-container pt-8 lg:pt-12 pb-page">
