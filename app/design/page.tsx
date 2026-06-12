@@ -7,13 +7,35 @@ import { TextInput } from "@/components/ui/text-input";
 import { ToggleOptions } from "@/components/ui/toggle-options";
 import { RadioOptions } from "@/components/ui/radio-options";
 import { CalendarInput } from "@/components/ui/calendar-input";
-import { DateCell, type DateCellState, type DateCellPosition } from "@/components/ui/date-cell";
+import {
+  DateCell,
+  type DateCellState,
+  type DateCellPosition,
+  type DateCellTheme,
+} from "@/components/ui/date-cell";
 import { ConfirmationAnimations } from "@/components/ui/confirmation-animations";
 import StatusBar from "@/components/ui/status-bar";
 import { Search } from "@/components/ui/search";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
+
+const DATE_CELL_STATES: { label: string; state: DateCellState; position: DateCellPosition }[] = [
+  { label: "Default", state: "default", position: "single" },
+  { label: "Disabled", state: "disabled", position: "single" },
+  { label: "Empty", state: "empty", position: "single" },
+  { label: "Day", state: "day", position: "single" },
+  { label: "Hover", state: "hover", position: "single" },
+  { label: "In range", state: "in-range", position: "single" },
+  { label: "Start", state: "selected", position: "start" },
+  { label: "End", state: "selected", position: "end" },
+  { label: "Selected", state: "selected", position: "single" },
+];
+
+const DATE_CELL_THEMES: { theme: DateCellTheme; surface: string; label: string }[] = [
+  { theme: "dark", surface: "bg-evergreen", label: "text-smoke/60" },
+  { theme: "light", surface: "bg-wax", label: "text-night/50" },
+];
 
 const COLORS = [
   { token: "night", bg: "bg-night", hex: "#0f1510", label: "Page background" },
@@ -326,37 +348,41 @@ export default function DesignPage() {
       {/* Date Cell States */}
       <section className="page-container border-b border-wax/10 py-16">
         <SectionLabel>Date Cell States</SectionLabel>
-        <div className="bg-evergreen rounded-xl p-6">
-          <div className="flex flex-wrap gap-8">
-            {(
-              [
-                { label: "Default", state: "default", position: "single" },
-                { label: "Disabled", state: "disabled", position: "single" },
-                { label: "Day", state: "day", position: "single" },
-                { label: "Hover", state: "hover", position: "single" },
-                { label: "In range", state: "in-range", position: "single" },
-                { label: "Start", state: "selected", position: "start" },
-                { label: "End", state: "selected", position: "end" },
-                { label: "Selected", state: "selected", position: "single" },
-              ] as { label: string; state: DateCellState; position: DateCellPosition }[]
-            ).map(({ label, state, position }) => (
-              <div key={label} className="flex flex-col items-center gap-2">
-                <DateCell state={state} position={position}>
-                  {state === "day" ? "Mo" : "14"}
-                </DateCell>
-                <span className="text-data text-smoke/60 uppercase tracking-widest">{label}</span>
+        <div className="flex flex-col gap-6">
+          {DATE_CELL_THEMES.map(({ theme, surface, label: labelCls }) => (
+            <div key={theme} className={`${surface} rounded-xl p-6`}>
+              <div className="flex flex-wrap gap-8">
+                {DATE_CELL_STATES.map(({ label, state, position }) => (
+                  <div key={label} className="flex flex-col items-center gap-2">
+                    <DateCell state={state} position={position} theme={theme}>
+                      {state === "day" ? "Mo" : "14"}
+                    </DateCell>
+                    <span className={`text-data ${labelCls} uppercase tracking-widest`}>{label}</span>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
+            </div>
+          ))}
         </div>
       </section>
 
       {/* CalendarInput */}
       <section className="page-container border-b border-wax/10 py-16">
         <SectionLabel>CalendarInput</SectionLabel>
-        <div className="w-fit">
-          <div className="bg-evergreen rounded-xl p-6">
+        <div className="flex flex-wrap gap-6">
+          <div className="bg-evergreen rounded-xl p-6 w-fit">
             <CalendarInput
+              checkIn={calIn}
+              checkOut={calOut}
+              onChange={(i, o) => {
+                setCalIn(i);
+                setCalOut(o);
+              }}
+            />
+          </div>
+          <div className="bg-wax rounded-xl p-6 w-fit">
+            <CalendarInput
+              theme="light"
               checkIn={calIn}
               checkOut={calOut}
               onChange={(i, o) => {

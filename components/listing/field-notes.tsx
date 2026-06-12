@@ -1,6 +1,6 @@
-import { Mountain, Flame, Droplets, Route, Leaf, Clock, Sunrise, Sunset } from "lucide-react";
+import { Mountain, Flame, Droplets, Signal, Leaf, Clock, Sunrise, Sunset } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { confident, formatAccess, formatWater, formatTime } from "@/lib/format";
+import { confident, formatSignal, formatWater, formatTime } from "@/lib/format";
 import type { Cabin } from "@/types/cabin";
 
 function FieldNoteItem({
@@ -26,7 +26,7 @@ function FieldNoteItem({
 const MAX_NOTES = 6;
 
 export default function FieldNotes({ cabin }: { cabin: Cabin }) {
-  const access = confident(cabin.road_access, cabin.road_access_conf);
+  const signal = formatSignal(cabin.cell_coverage);
   const season = confident(cabin.season, cabin.season_conf);
   const elevation = confident(cabin.elevation_ft, cabin.elevation_ft_conf);
   const heat = confident(cabin.heat_source, cabin.heat_source_conf);
@@ -35,7 +35,7 @@ export default function FieldNotes({ cabin }: { cabin: Cabin }) {
   // Pool ordered by display priority. Check-in/checkout are fillers — they
   // only appear when primary fields don't have enough data to fill the grid.
   const pool: { icon: LucideIcon; label: string; value: string | null }[] = [
-    { icon: Route, label: "Access", value: access ? formatAccess(access) : null },
+    { icon: Signal, label: "Signal", value: signal },
     {
       icon: Mountain,
       label: "Elevation",

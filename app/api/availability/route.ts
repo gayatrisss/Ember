@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { fetchMonthAvailability } from "@/lib/availability";
 
 // Returns raw Recreation.gov availability for a single month.
 // ?facilityId=XXX            → defaults to current calendar month
@@ -29,30 +30,9 @@ export async function GET(req: NextRequest) {
     month = now.getMonth();
   }
 
-  const startDate = new Date(Date.UTC(year, month, 1)).toISOString().replace(/\.\d{3}Z$/, ".000Z");
-
-  const url = `https://www.recreation.gov/api/camps/availability/campground/${facilityId}/month?start_date=${encodeURIComponent(startDate)}`;
-
-  try {
-    const res = await fetch(url, {
-      headers: { "User-Agent": "Mozilla/5.0" },
-      next: { revalidate: 300 },
-    });
-
-    if (!res.ok) {
-      console.log(
-        "[ember] availability route: rec.gov returned",
-        res.status,
-        "for facility",
-        facilityId
-      );
-      return NextResponse.json({ error: `Recreation.gov returned ${res.status}` }, { status: 502 });
-    }
-
-    const data = await res.json();
-    return NextResponse.json(data);
-  } catch (err) {
-    console.log("[ember] availability route: fetch failed", err);
+  const data = await fetchMonthAvailability(facilityId, year, month);
+  if (data == null) {
     return NextResponse.json({ error: "Failed to reach Recreation.gov" }, { status: 502 });
   }
+  return NextResponse.json(data);
 }

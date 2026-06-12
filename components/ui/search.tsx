@@ -4,10 +4,13 @@ import { useEffect, useRef, useState } from "react";
 import { Home, Loader2, Search as SearchIcon } from "lucide-react";
 import { Command as CommandPrimitive } from "cmdk";
 import { Field } from "@/components/ui/field";
-import { useCabinSearch } from "@/components/ui/use-cabin-search";
+import { useCabinSearch, type Cabin } from "@/components/ui/use-cabin-search";
 import { formatCabinName } from "@/lib/format";
 
-export function Search() {
+// When `onSelect` is provided, choosing a cabin fills the input and reports the
+// selection to the parent (no navigation) — used by the landing alert form.
+// Without it, Search falls back to opening the cabin page (design-system demo).
+export function Search({ onSelect }: { onSelect?: (cabin: Cabin) => void }) {
   const { query, setQuery, ready, q, visibleResults, hasMore, handleScroll } = useCabinSearch();
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -82,6 +85,11 @@ export function Search() {
                         value={`cabin-${cabin.id}`}
                         onSelect={() => {
                           setOpen(false);
+                          if (onSelect) {
+                            setQuery(formatCabinName(cabin.name));
+                            onSelect(cabin);
+                            return;
+                          }
                           window.open(`/cabin/${cabin.id}`, "_blank");
                         }}
                         className="flex items-center gap-3 px-4 py-3 cursor-pointer outline-none transition-colors hover:bg-ember/7 data-[selected=true]:bg-ember/10 data-[selected=true]:text-ember"

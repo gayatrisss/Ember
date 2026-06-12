@@ -2,7 +2,12 @@
 
 import { useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { DateCell, type DateCellState, type DateCellPosition } from "@/components/ui/date-cell";
+import {
+  DateCell,
+  type DateCellState,
+  type DateCellPosition,
+  type DateCellTheme,
+} from "@/components/ui/date-cell";
 
 const MONTHS = [
   "January",
@@ -18,7 +23,7 @@ const MONTHS = [
   "November",
   "December",
 ];
-const DAYS = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"];
+const DAYS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
 
 function sameDay(a: Date, b: Date) {
   return (
@@ -35,25 +40,32 @@ type CalendarHeaderProps = {
   year: number;
   onPrev: () => void;
   onNext: () => void;
+  theme?: DateCellTheme;
 };
 
-export function CalendarHeader({ month, year, onPrev, onNext }: CalendarHeaderProps) {
+const HEADER_THEME: Record<DateCellTheme, { text: string; hover: string }> = {
+  dark: { text: "text-wax", hover: "hover:bg-white/5" },
+  light: { text: "text-night", hover: "hover:bg-black/5" },
+};
+
+export function CalendarHeader({ month, year, onPrev, onNext, theme = "dark" }: CalendarHeaderProps) {
+  const t = HEADER_THEME[theme];
   return (
     <div className="flex items-center justify-between mb-2">
       <button
         type="button"
         onClick={onPrev}
-        className="text-wax p-2 rounded-lg hover:bg-white/5 transition-colors"
+        className={`${t.text} p-2 rounded-lg ${t.hover} transition-colors`}
       >
         <ChevronLeft size={24} />
       </button>
-      <span className="text-body text-wax">
+      <span className={`text-body ${t.text}`}>
         {MONTHS[month]} {year}
       </span>
       <button
         type="button"
         onClick={onNext}
-        className="text-wax p-2 rounded-lg hover:bg-white/5 transition-colors"
+        className={`${t.text} p-2 rounded-lg ${t.hover} transition-colors`}
       >
         <ChevronRight size={24} />
       </button>
@@ -88,6 +100,8 @@ type CalendarInputProps = {
   onMonthChange?: (year: number, month: number) => void;
   initialMonth?: number;
   initialYear?: number;
+  // Adapts colors to a dark (evergreen) or light (wax) surface. Defaults to dark.
+  theme?: DateCellTheme;
 };
 
 export function CalendarInput({
@@ -99,6 +113,7 @@ export function CalendarInput({
   onMonthChange,
   initialMonth = new Date().getMonth(),
   initialYear = new Date().getFullYear(),
+  theme = "dark",
 }: CalendarInputProps) {
   const [month, setMonth] = useState(initialMonth);
   const [year, setYear] = useState(initialYear);
@@ -139,13 +154,16 @@ export function CalendarInput({
   // Build grid: Mon–Sun, padded with adjacent-month dates
   const first = new Date(year, month, 1);
   const last = new Date(year, month + 1, 0);
-  const startOffset = (first.getDay() + 6) % 7; // Mon = 0
+  const startOffset = first.getDay(); // Sun = 0
 
   const cells: Date[] = [];
   for (let i = startOffset; i > 0; i--) cells.push(new Date(year, month, 1 - i));
   for (let d = 1; d <= last.getDate(); d++) cells.push(new Date(year, month, d));
+  // Always pad to 6 rows (42 cells). Months span 4–6 week-rows; rendering a
+  // constant 6 keeps the grid height fixed across months so content never jumps.
+  // The extra cells are out-of-month, so they render as blank `empty` cells.
   let overflow = 1;
-  while (cells.length % 7 !== 0) cells.push(new Date(year, month + 1, overflow++));
+  while (cells.length < 42) cells.push(new Date(year, month + 1, overflow++));
 
   // Derive the visual range (handles hover preview + reversed drag direction)
   const effectiveEnd = checkOut ?? (checkIn && hoverDate ? hoverDate : null);
@@ -155,12 +173,12 @@ export function CalendarInput({
 
   return (
     <div className="w-fit mx-auto">
-      <CalendarHeader month={month} year={year} onPrev={prevMonth} onNext={nextMonth} />
+      <CalendarHeader month={month} year={year} onPrev={prevMonth} onNext={nextMonth} theme={theme} />
 
       {/* Day-of-week labels */}
       <div className="grid grid-cols-7 mb-2">
         {DAYS.map((d) => (
-          <DateCell key={d} state="day">
+          <DateCell key={d} state="day" theme={theme}>
             {d}
           </DateCell>
         ))}
@@ -172,11 +190,7 @@ export function CalendarInput({
           const inMonth = date.getMonth() === month;
 
           if (!inMonth) {
-            return (
-              <DateCell key={i} state="disabled">
-                {date.getDate()}
-              </DateCell>
-            );
+            return <DateCell key={i} state="empty" theme={theme} />;
           }
 
           // A date is unavailable when:
@@ -229,6 +243,7 @@ export function CalendarInput({
               key={i}
               state={cellState}
               position={cellPosition}
+              theme={theme}
               onMouseEnter={() => setHoverDate(date)}
               onMouseLeave={() => setHoverDate(null)}
               onClick={() => handleSelect(date)}

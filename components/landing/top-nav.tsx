@@ -21,8 +21,8 @@ export default function TopNav({ email, name }: { email: string | null; name: st
   return (
     <>
       <nav
-        className={`fixed top-0 left-0 right-0 z-50 transition-colors duration-300 ${
-          scrolled ? "bg-ash backdrop-blur-sm" : ""
+        className={`fixed top-0 left-0 right-0 z-50 transition-colors duration-300 bg-ash  ${
+          scrolled ? "backdrop-blur-sm" : ""
         }`}
       >
         <div className="page-container relative h-20 flex items-center justify-between">

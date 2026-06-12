@@ -32,6 +32,7 @@ export type Cabin = {
   num_beds: number | null
   bed_type: string | null
   nightly_rate: string | null  // Postgres numeric → JSON string
+  cell_coverage: string | null // rec.gov aggregate_cell_coverage (0–5), numeric → JSON string
 }
 
 export type CabinImage = {

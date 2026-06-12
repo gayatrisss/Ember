@@ -188,9 +188,13 @@ function ConfirmedContent({ cabinName, email }: { cabinName: string; email: stri
 export function AvailabilityPanel({
   facilityId,
   cabinName,
+  initialMonths,
 }: {
   facilityId: string;
   cabinName: string;
+  // Month cache seeded by the server (keyed "YYYY-MM") covering the panel's
+  // initial view, so the first paint has data and skips the loading state.
+  initialMonths?: Record<string, unknown>;
 }) {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -289,7 +293,9 @@ export function AvailabilityPanel({
   }
 
   // Keyed by "YYYY-MM" → raw API response. Source of truth for all availability.
-  const [monthCache, setMonthCache] = useState<Record<string, unknown>>({});
+  // Seeded from the server-prefetched initial month(s) so the panel paints with
+  // data instead of a spinner; further months are fetched on demand.
+  const [monthCache, setMonthCache] = useState<Record<string, unknown>>(initialMonths ?? {});
   // Tracks in-flight requests to prevent duplicate fetches.
   const inFlight = useRef<Set<string>>(new Set());
 
@@ -312,10 +318,11 @@ export function AvailabilityPanel({
       });
   }
 
-  // Fetch current month on mount.
+  // Ensure the initially shown month is loaded. Normally it's already seeded from
+  // the server (so this no-ops); this only fetches when the server prefetch failed.
   useEffect(() => {
-    const now = new Date();
-    fetchMonth(now.getFullYear(), now.getMonth());
+    const initial = checkIn ?? new Date();
+    fetchMonth(initial.getFullYear(), initial.getMonth());
   }, [facilityId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Derive available dates and fetched months from the cache.
@@ -508,6 +515,8 @@ export function AvailabilityPanel({
           availableDates={availableDates}
           fetchedMonths={fetchedMonths}
           onMonthChange={handleMonthChange}
+          initialMonth={checkIn?.getMonth()}
+          initialYear={checkIn?.getFullYear()}
         />
       );
       cta = calendarCta();

@@ -1,9 +1,11 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Calendar } from "lucide-react";
 import { Search } from "@/components/ui/search";
 import { CalendarInput } from "@/components/ui/calendar-input";
+import { type Cabin } from "@/components/ui/use-cabin-search";
 
 function formatRange(checkIn: Date | null, checkOut: Date | null): string {
   if (!checkIn) return "";
@@ -12,7 +14,16 @@ function formatRange(checkIn: Date | null, checkOut: Date | null): string {
   return `${checkIn.toLocaleDateString("en-US", o)} – ${checkOut.toLocaleDateString("en-US", o)}`;
 }
 
+function toDateStr(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
 export default function AlertForm() {
+  const router = useRouter();
+  const [selectedCabin, setSelectedCabin] = useState<Cabin | null>(null);
   const [checkIn, setCheckIn] = useState<Date | null>(null);
   const [checkOut, setCheckOut] = useState<Date | null>(null);
   const [calOpen, setCalOpen] = useState(false);
@@ -23,6 +34,22 @@ export default function AlertForm() {
     setCheckOut(newOut);
     if (newIn && newOut) setCalOpen(false);
   }
+
+  // Picking a cabin fills the search input (handled in Search) and immediately
+  // opens the calendar so the user is pushed to choose dates next.
+  function handleCabinSelect(cabin: Cabin) {
+    setSelectedCabin(cabin);
+    setCalOpen(true);
+  }
+
+  function handleSubmit() {
+    if (!selectedCabin || !checkIn || !checkOut) return;
+    router.push(
+      `/cabin/${selectedCabin.id}?checkIn=${toDateStr(checkIn)}&checkOut=${toDateStr(checkOut)}`
+    );
+  }
+
+  const canSubmit = !!selectedCabin && !!checkIn && !!checkOut;
 
   useEffect(() => {
     function onClickOutside(e: MouseEvent) {
@@ -50,7 +77,7 @@ export default function AlertForm() {
       <span className="text-data text-wax/70 uppercase tracking-wider">SET AN ALERT</span>
 
       <div className="mt-8 space-y-6">
-        <Search />
+        <Search onSelect={handleCabinSelect} />
 
         {/* WHEN — popover trigger */}
         <div ref={whenRef}>
@@ -85,7 +112,12 @@ export default function AlertForm() {
         </div>
       </div>
 
-      <button className="mt-8 w-full h-14 bg-ember text-wax rounded-md text-body hover:brightness-110">
+      <button
+        type="button"
+        onClick={handleSubmit}
+        disabled={!canSubmit}
+        className="mt-8 w-full h-14 bg-ember text-wax rounded-md text-body hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:brightness-100"
+      >
         Let&apos;s escape
       </button>
     </div>

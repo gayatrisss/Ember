@@ -69,6 +69,18 @@ export function formatRate(raw: string | null): string | null {
   return `$${n % 1 === 0 ? n : n.toFixed(2)}/night`
 }
 
+// Maps rec.gov's aggregate_cell_coverage (0–5 average) to a coverage label.
+// null/unparseable → null (caller shows "—" for "no data").
+export function formatSignal(raw: string | null): string | null {
+  if (!raw) return null
+  const n = parseFloat(raw)
+  if (isNaN(n)) return null
+  if (n < 1) return "No service"
+  if (n < 2) return "Weak"
+  if (n < 3) return "Moderate"
+  return "Strong"
+}
+
 // "02:00 PM" → "2:00 PM"
 export function formatTime(raw: string | null): string | null {
   if (!raw) return null

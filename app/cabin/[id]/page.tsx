@@ -9,16 +9,26 @@ import TopoImage from "@/components/listing/topo-image";
 import FieldNotes from "@/components/listing/field-notes";
 import { AvailabilityPanel } from "@/components/ui/availability-panel";
 import type { Cabin, CabinImage } from "@/types/cabin";
-import { confident, getCabinType, formatRate } from "@/lib/format";
+import { confident, getCabinType, formatRate, formatAccess } from "@/lib/format";
+import { fetchInitialMonths } from "@/lib/availability";
 
 type Params = { id: string };
+type Search = { [key: string]: string | string[] | undefined };
 
-export default async function CabinPage({ params }: { params: Promise<Params> }) {
-  const { id } = await params;
+export default async function CabinPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<Params>;
+  searchParams: Promise<Search>;
+}) {
+  const [{ id }, sp] = await Promise.all([params, searchParams]);
+  const checkIn = typeof sp.checkIn === "string" ? sp.checkIn : null;
+  const checkOut = typeof sp.checkOut === "string" ? sp.checkOut : null;
 
   const supabase = await createClient();
 
-  const [{ data: cabin }, { data: images }, { data: { user } }] = await Promise.all([
+  const [{ data: cabin }, { data: images }, { data: { user } }, initialMonths] = await Promise.all([
     supabase.from("cabins").select("*").eq("facility_id", id).single<Cabin>(),
     supabase
       .from("cabin_images")
@@ -28,6 +38,8 @@ export default async function CabinPage({ params }: { params: Promise<Params> })
       .order("is_preview", { ascending: false })
       .returns<CabinImage[]>(),
     supabase.auth.getUser(),
+    // Prefetch the month(s) the panel opens to so it renders without a loading spinner.
+    fetchInitialMonths(id, checkIn, checkOut),
   ]);
 
   if (!cabin) notFound();
@@ -35,6 +47,7 @@ export default async function CabinPage({ params }: { params: Promise<Params> })
   const sleeps = confident(cabin.sleeps, cabin.sleeps_conf);
   const type = getCabinType(cabin.facility_name);
   const rate = formatRate(cabin.nightly_rate);
+  const access = confident(cabin.road_access, cabin.road_access_conf);
 
   return (
     <div className="min-h-screen bg-night flex flex-col">
@@ -50,7 +63,7 @@ export default async function CabinPage({ params }: { params: Promise<Params> })
               facts={[
                 { label: "Sleeps", value: sleeps ? `${sleeps} people` : "—" },
                 { label: "Type", value: type },
-                { label: "Signal", value: "—" },
+                { label: "Access", value: access ? formatAccess(access) : "—" },
                 { label: "Price", value: rate ?? "—" },
               ]}
             />
@@ -60,7 +73,11 @@ export default async function CabinPage({ params }: { params: Promise<Params> })
             </div>
           </div>
 
-          <AvailabilityPanel facilityId={id} cabinName={cabin.facility_name} />
+          <AvailabilityPanel
+            facilityId={id}
+            cabinName={cabin.facility_name}
+            initialMonths={initialMonths}
+          />
         </div>
 
         <FieldNotes cabin={cabin} />

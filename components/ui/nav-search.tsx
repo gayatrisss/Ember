@@ -107,16 +107,16 @@ export function NavSearch() {
             {q.length > 0 && (
               <div
                 onScroll={handleScroll}
-                className="absolute left-0 top-full mt-2 w-full z-50 bg-night border border-ember/25 rounded-xl max-h-96 overflow-y-auto shadow-ember-md"
+                className="absolute left-0 top-full mt-2 w-full z-50 bg-wax border border-night/10 rounded-xl max-h-96 overflow-y-auto shadow-ember-md"
               >
                 <CommandPrimitive.List>
                   {q.length === 1 && (
-                    <div className="py-5 text-center text-body text-wax/40">Keep typing…</div>
+                    <div className="py-5 text-center text-body text-night/40">Keep typing…</div>
                   )}
 
                   {q.length >= 2 && visibleResults.length > 0 && (
                     <CommandPrimitive.Group>
-                      <div className="px-4 pt-4 pb-2 text-data uppercase tracking-widest text-smoke">
+                      <div className="px-3 pt-4 pb-2 text-data uppercase tracking-widest text-smoke">
                         Cabins
                       </div>
                       {visibleResults.map((cabin) => (
@@ -124,13 +124,13 @@ export function NavSearch() {
                           key={cabin.id}
                           value={`cabin-${cabin.id}`}
                           onSelect={() => selectCabin(cabin)}
-                          className="flex items-center gap-3 px-4 py-3 cursor-pointer outline-none transition-colors hover:bg-ember/7 data-[selected=true]:bg-ember/10 data-[selected=true]:text-ember"
+                          className="flex items-center gap-3 p-3 cursor-pointer outline-none transition-colors hover:bg-ember/30 data-[selected=true]:bg-ember/30"
                         >
-                          <div className="w-7 h-7 rounded-md bg-ember/12 flex items-center justify-center shrink-0">
-                            <Home size={14} className="text-ember" />
+                          <div className="size-8 rounded-lg bg-ember/45 flex items-center justify-center shrink-0">
+                            <Home size={24} className="text-ember" />
                           </div>
                           <div className="min-w-0">
-                            <div className="text-body text-wax">{formatCabinName(cabin.name)}</div>
+                            <div className="text-body text-night">{formatCabinName(cabin.name)}</div>
                             {cabin.area && (
                               <div className="text-label text-smoke truncate">{cabin.area}</div>
                             )}
@@ -146,7 +146,7 @@ export function NavSearch() {
                   )}
 
                   {q.length >= 2 && visibleResults.length === 0 && (
-                    <div className="py-5 text-center text-body text-wax/40">
+                    <div className="py-5 text-center text-body text-night/40">
                       No cabins found for &ldquo;{q}&rdquo;
                     </div>
                   )}
@@ -170,7 +170,7 @@ export function NavSearch() {
 
       {/* Right group: dates + submit */}
       <div className="flex items-center gap-6 shrink-0">
-        <div className="relative">
+        <div>
           <button
             type="button"
             onClick={() => setPopover((p) => (p === "dates" ? null : "dates"))}
@@ -183,8 +183,13 @@ export function NavSearch() {
           </button>
 
           {popover === "dates" && (
-            <div className="absolute right-0 top-full mt-2 z-50 bg-evergreen border border-wax/10 rounded-xl p-5">
-              <CalendarInput checkIn={checkIn} checkOut={checkOut} onChange={handleDateChange} />
+            <div className="absolute right-0 top-full mt-2 z-50 w-max bg-wax border border-night/10 rounded-xl p-5 shadow-ember-md">
+              <CalendarInput
+                checkIn={checkIn}
+                checkOut={checkOut}
+                onChange={handleDateChange}
+                theme="light"
+              />
             </div>
           )}
         </div>

@@ -6,7 +6,7 @@ type BookingPanelProps = {
 
 export function BookingPanel({ title, children, cta }: BookingPanelProps) {
   return (
-    <div className="bg-evergreen rounded-2xl p-9 flex flex-col h-[600px]">
+    <div className="bg-evergreen rounded-2xl p-9 flex flex-col h-[680px]">
       {title && (
         <p className="text-data uppercase tracking-widest text-ember shrink-0">{title}</p>
       )}
