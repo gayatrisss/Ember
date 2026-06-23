@@ -9,6 +9,8 @@
 // one place. fetch() caching (revalidate: 300) dedupes identical month requests
 // across the route and the server render within the window.
 
+import { parseMockConfig, mockMonthAvailability } from "@/lib/availability-mock";
+
 export function monthKey(year: number, month: number): string {
   return `${year}-${String(month + 1).padStart(2, "0")}`;
 }
@@ -188,6 +190,20 @@ export async function fetchMonthAvailability(
   year: number,
   month: number
 ): Promise<unknown | null> {
+  // Dev short-circuit: when EMBER_MOCK_AVAILABILITY is set, skip rec.gov entirely and
+  // return synthetic availability so the notifications pipeline can run end to end.
+  const mockConfig = parseMockConfig(process.env.EMBER_MOCK_AVAILABILITY);
+  if (mockConfig.mode !== "off") {
+    console.log(
+      "[ember] availability: MOCK mode",
+      `(${mockConfig.mode})`,
+      "for",
+      facilityId,
+      monthKey(year, month)
+    );
+    return mockMonthAvailability(year, month, mockConfig);
+  }
+
   const startDate = new Date(Date.UTC(year, month, 1)).toISOString().replace(/\.\d{3}Z$/, ".000Z");
   const url = `https://www.recreation.gov/api/camps/availability/campground/${facilityId}/month?start_date=${encodeURIComponent(startDate)}`;
 
