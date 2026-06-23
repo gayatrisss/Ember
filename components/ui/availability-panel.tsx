@@ -7,12 +7,19 @@ import { CalendarInput } from "@/components/ui/calendar-input";
 import { ToggleOptions } from "@/components/ui/toggle-options";
 import { Spinner } from "@/components/ui/spinner";
 import { createClient } from "@/lib/supabase/client";
+import {
+  monthKey,
+  toDateStr,
+  getMonthKeys,
+  extractAvailableDates,
+  parseStatus,
+  mergeCampsites,
+  type AvailabilityStatus,
+} from "@/lib/availability";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 type View = "calendar" | "alert-setup" | "reminder-setup" | "confirmed";
-type AvailabilityStatus = "available" | "booked" | "not-open";
-type CampsiteData = { quantities: Record<string, number> };
 
 type AvailState = { loading: boolean; error: boolean; status: AvailabilityStatus | null };
 type AvailAction =
@@ -36,76 +43,10 @@ function availReducer(_: AvailState, action: AvailAction): AvailState {
   }
 }
 
-function toMonthKey(year: number, month: number): string {
-  return `${year}-${String(month + 1).padStart(2, "0")}`;
-}
-
-function dateKey(date: Date): string {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, "0");
-  const d = String(date.getDate()).padStart(2, "0");
-  return `${y}-${m}-${d}T00:00:00Z`;
-}
-
-// Returns the set of "YYYY-MM" keys needed to cover a date range.
-function getMonthKeys(checkIn: Date, checkOut: Date): string[] {
-  const months = new Set<string>();
-  const d = new Date(checkIn);
-  while (d < checkOut) {
-    months.add(toMonthKey(d.getFullYear(), d.getMonth()));
-    d.setDate(d.getDate() + 1);
-  }
-  return Array.from(months);
-}
-
-// Extracts dates with quantity === 1 on ANY campsite across all cached months.
-// Only these dates are considered available — everything else defaults to unavailable.
-function extractAvailableDates(monthCache: Record<string, unknown>): Set<string> {
-  const result = new Set<string>();
-  for (const data of Object.values(monthCache)) {
-    if (!data || typeof data !== "object") continue;
-    const campsites = Object.values(
-      (data as { campsites?: Record<string, CampsiteData> }).campsites ?? {}
-    );
-    for (const campsite of campsites) {
-      for (const [key, qty] of Object.entries(campsite.quantities)) {
-        if (qty === 1) result.add(key);
-      }
-    }
-  }
-  return result;
-}
-
-function parseStatus(
-  campsites: Record<string, CampsiteData>,
-  checkIn: Date,
-  checkOut: Date
-): AvailabilityStatus {
-  const nights: string[] = [];
-  const d = new Date(checkIn);
-  while (d < checkOut) {
-    nights.push(dateKey(d));
-    d.setDate(d.getDate() + 1);
-  }
-  for (const campsite of Object.values(campsites)) {
-    if (nights.every((n) => campsite.quantities[n] === 1)) return "available";
-  }
-  const allKeys = new Set(Object.values(campsites).flatMap((c) => Object.keys(c.quantities)));
-  if (nights.some((n) => !allKeys.has(n))) return "not-open";
-  return "booked";
-}
-
 function fmtRange(a: Date | null, b: Date | null): string {
   if (!a || !b) return "—";
   const opts: Intl.DateTimeFormatOptions = { month: "short", day: "numeric" };
   return `${a.toLocaleDateString("en-US", opts)}–${b.toLocaleDateString("en-US", opts)}`;
-}
-
-function toDateStr(date: Date): string {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, "0");
-  const d = String(date.getDate()).padStart(2, "0");
-  return `${y}-${m}-${d}`;
 }
 
 // ─── Shared sub-components ───────────────────────────────────────────────────
@@ -300,7 +241,7 @@ export function AvailabilityPanel({
   const inFlight = useRef<Set<string>>(new Set());
 
   function fetchMonth(year: number, month: number) {
-    const key = toMonthKey(year, month);
+    const key = monthKey(year, month);
     if (monthCache[key] !== undefined || inFlight.current.has(key)) return;
     inFlight.current.add(key);
     fetch(`/api/availability?facilityId=${facilityId}&month=${key}`)
@@ -360,16 +301,7 @@ export function AvailabilityPanel({
     }
 
     // Merge campsite data from the relevant cached months.
-    const merged: Record<string, CampsiteData> = {};
-    for (const key of monthKeys) {
-      const data = monthCache[key];
-      for (const [id, campsite] of Object.entries(
-        (data as { campsites?: Record<string, CampsiteData> }).campsites ?? {}
-      )) {
-        if (!merged[id]) merged[id] = { quantities: {} };
-        Object.assign(merged[id].quantities, (campsite as CampsiteData).quantities);
-      }
-    }
+    const merged = mergeCampsites(monthKeys.map((key) => monthCache[key]));
 
     if (Object.keys(merged).length === 0) {
       dispatch({ type: "error" });

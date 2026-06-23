@@ -7,6 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "format": "prettier --write \"**/*.{ts,tsx,css,json}\" --ignore-path .gitignore"
   },
   "dependencies": {
@@ -36,6 +38,7 @@
     "eslint-config-next": "16.2.6",
     "prettier": "^3.8.3",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^4.1.9"
   }
 }
