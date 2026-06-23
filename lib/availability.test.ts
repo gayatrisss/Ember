@@ -14,11 +14,16 @@ import {
 // Local-midnight Date for a calendar day (month is 1-indexed here for readability).
 const day = (y: number, m: number, d: number) => new Date(y, m - 1, d);
 
-// A campsite whose given calendar days (1-indexed month) are bookable (qty 1).
+// A campsite with explicit per-night statuses, e.g. ([2026,7,7,"Closed"], ...).
+function withStatus(...nights: [number, number, number, string][]): CampsiteData {
+  const availabilities: Record<string, string> = {};
+  for (const [y, m, d, status] of nights) availabilities[dateKey(day(y, m, d))] = status;
+  return { availabilities };
+}
+
+// A campsite that is "Available" on the given calendar days (1-indexed month).
 function openOn(...days: [number, number, number][]): CampsiteData {
-  const quantities: Record<string, number> = {};
-  for (const [y, m, d] of days) quantities[dateKey(day(y, m, d))] = 1;
-  return { quantities };
+  return withStatus(...days.map(([y, m, d]) => [y, m, d, "Available"] as [number, number, number, string]));
 }
 
 describe("monthKey", () => {
@@ -70,19 +75,28 @@ describe("getMonthKeys", () => {
 });
 
 describe("extractAvailableDates", () => {
-  it("collects only quantity===1 keys across all campsites", () => {
+  it("collects only 'Available' keys across all campsites", () => {
     const cache = {
       "2026-07": {
         campsites: {
-          A: { quantities: { [dateKey(day(2026, 7, 5))]: 1, [dateKey(day(2026, 7, 6))]: 0 } },
-          B: { quantities: { [dateKey(day(2026, 7, 6))]: 1 } },
+          A: withStatus([2026, 7, 5, "Available"], [2026, 7, 6, "Reserved"]),
+          B: withStatus([2026, 7, 6, "Available"]),
         },
       },
     };
     const result = extractAvailableDates(cache);
-    expect(result.has(dateKey(day(2026, 7, 5)))).toBe(true); // open on A
-    expect(result.has(dateKey(day(2026, 7, 6)))).toBe(true); // open on B (any campsite)
-    expect(result.size).toBe(2);
+    expect(result.has(dateKey(day(2026, 7, 5)))).toBe(true); // Available on A
+    expect(result.has(dateKey(day(2026, 7, 6)))).toBe(true); // Available on B (any campsite)
+    expect(result.size).toBe(2); // Jul 6 Reserved on A is not counted
+  });
+
+  it("excludes Closed nights even though rec.gov reports quantity 1 for them", () => {
+    const cache = {
+      "2026-07": {
+        campsites: { A: { availabilities: { [dateKey(day(2026, 7, 7))]: "Closed" } } },
+      },
+    };
+    expect(extractAvailableDates(cache).size).toBe(0);
   });
 
   it("skips months that failed to fetch (null / non-object)", () => {
@@ -92,34 +106,61 @@ describe("extractAvailableDates", () => {
 });
 
 describe("mergeCampsites", () => {
-  it("combines a campsite's nightly quantities across months", () => {
-    const julyJson = { campsites: { A: { quantities: { [dateKey(day(2026, 7, 31))]: 1 } } } };
-    const augJson = { campsites: { A: { quantities: { [dateKey(day(2026, 8, 1))]: 1 } } } };
+  it("combines a campsite's nightly statuses across months", () => {
+    const julyJson = {
+      campsites: { A: { availabilities: { [dateKey(day(2026, 7, 31))]: "Available" } } },
+    };
+    const augJson = {
+      campsites: { A: { availabilities: { [dateKey(day(2026, 8, 1))]: "Available" } } },
+    };
     const merged = mergeCampsites([julyJson, augJson]);
     expect(Object.keys(merged)).toEqual(["A"]);
-    expect(merged.A.quantities[dateKey(day(2026, 7, 31))]).toBe(1);
-    expect(merged.A.quantities[dateKey(day(2026, 8, 1))]).toBe(1);
+    expect(merged.A.availabilities[dateKey(day(2026, 7, 31))]).toBe("Available");
+    expect(merged.A.availabilities[dateKey(day(2026, 8, 1))]).toBe("Available");
   });
 
   it("keeps distinct campsites separate and skips bad months", () => {
     const merged = mergeCampsites([
-      { campsites: { A: { quantities: { x: 1 } } } },
+      { campsites: { A: { availabilities: { x: "Available" } } } },
       null,
-      { campsites: { B: { quantities: { y: 1 } } } },
+      { campsites: { B: { availabilities: { y: "Available" } } } },
     ]);
     expect(Object.keys(merged).sort()).toEqual(["A", "B"]);
   });
 });
 
 describe("parseStatus", () => {
-  it("is 'available' when one campsite is free every night of the range", () => {
+  it("is 'available' when one campsite is Available every night of the range", () => {
     const campsites = { A: openOn([2026, 7, 5], [2026, 7, 6]) };
     expect(parseStatus(campsites, day(2026, 7, 5), day(2026, 7, 7))).toBe("available");
   });
 
-  it("is 'booked' when nights exist but no single campsite covers the whole range", () => {
-    const campsites = { A: openOn([2026, 7, 5]), B: openOn([2026, 7, 6]) };
-    // both nights are present in the data, just split across campsites
+  it("is not 'available' when a night is Closed — the Trail Creek bug", () => {
+    // Jul 8 closed, Jul 9 available -> the stay is not bookable as-is
+    const campsites = { A: withStatus([2026, 7, 8, "Closed"], [2026, 7, 9, "Available"]) };
+    expect(parseStatus(campsites, day(2026, 7, 8), day(2026, 7, 10))).not.toBe("available");
+  });
+
+  it("treats a Closed night as watchable -> 'booked' (offer an alert)", () => {
+    const campsites = { A: withStatus([2026, 7, 8, "Closed"], [2026, 7, 9, "Available"]) };
+    expect(parseStatus(campsites, day(2026, 7, 8), day(2026, 7, 10))).toBe("booked");
+  });
+
+  it("is 'booked' for a fully-closed range (closure may lift; watch it)", () => {
+    const campsites = { A: withStatus([2026, 7, 7, "Closed"], [2026, 7, 8, "Closed"]) };
+    expect(parseStatus(campsites, day(2026, 7, 7), day(2026, 7, 9))).toBe("booked");
+  });
+
+  it("is 'booked' when nights are reserved (cancellation-alert territory)", () => {
+    const campsites = { A: withStatus([2026, 7, 5, "Reserved"], [2026, 7, 6, "Reserved"]) };
+    expect(parseStatus(campsites, day(2026, 7, 5), day(2026, 7, 7))).toBe("booked");
+  });
+
+  it("is 'booked' when nights are reservable but split across campsites", () => {
+    const campsites = {
+      A: withStatus([2026, 7, 5, "Available"], [2026, 7, 6, "Reserved"]),
+      B: withStatus([2026, 7, 5, "Reserved"], [2026, 7, 6, "Available"]),
+    };
     expect(parseStatus(campsites, day(2026, 7, 5), day(2026, 7, 7))).toBe("booked");
   });
 
@@ -134,6 +175,20 @@ describe("findAvailableWindows", () => {
     const campsites = { A: openOn([2026, 7, 5], [2026, 7, 6], [2026, 7, 7]) };
     expect(findAvailableWindows(campsites, day(2026, 7, 1), day(2026, 7, 31))).toEqual([
       { from: "2026-07-05", to: "2026-07-08" },
+    ]);
+  });
+
+  it("treats a Closed night as a break, not part of a run", () => {
+    const campsites = {
+      A: withStatus(
+        [2026, 7, 5, "Available"],
+        [2026, 7, 6, "Closed"],
+        [2026, 7, 7, "Available"]
+      ),
+    };
+    expect(findAvailableWindows(campsites, day(2026, 7, 1), day(2026, 7, 31))).toEqual([
+      { from: "2026-07-05", to: "2026-07-06" },
+      { from: "2026-07-07", to: "2026-07-08" },
     ]);
   });
 
@@ -181,8 +236,8 @@ describe("findAvailableWindows", () => {
     ]);
   });
 
-  it("returns nothing when no nights are open", () => {
-    const campsites = { A: { quantities: { [dateKey(day(2026, 7, 5))]: 0 } } };
+  it("returns nothing when no nights are Available", () => {
+    const campsites = { A: withStatus([2026, 7, 5, "Reserved"], [2026, 7, 6, "Closed"]) };
     expect(findAvailableWindows(campsites, day(2026, 7, 1), day(2026, 7, 31))).toEqual([]);
   });
 });

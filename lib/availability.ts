@@ -15,14 +15,29 @@ export function monthKey(year: number, month: number): string {
 
 // ─── Availability interpretation (shared by the booking panel + the cron) ──────
 //
-// rec.gov keys per-campsite quantities by an absolute date string. These pure
-// functions turn that raw shape into Ember's notion of availability. They live here
-// (next to the fetch) so the UI and the notifications cron judge availability
-// identically — one source of truth, no drift.
+// rec.gov returns, per campsite, an `availabilities` map of date -> status string.
+// These pure functions turn that raw shape into Ember's notion of availability. They
+// live here (next to the fetch) so the UI and the notifications cron judge
+// availability identically — one source of truth, no drift.
+//
+// IMPORTANT: bookability comes from `availabilities`, NOT the parallel `quantities`
+// map rec.gov also returns. A "Closed" night still reports quantity === 1, so a
+// quantity check reads closures as bookable. Only status === "Available" is bookable.
 
 export type AvailabilityStatus = "available" | "booked" | "not-open";
-// One campsite's nightly availability: 1 = bookable that night, 0 = taken.
-export type CampsiteData = { quantities: Record<string, number> };
+// The rec.gov per-night status values we special-case. Everything else (Closed,
+// NYR, "Not Reservable", …) falls through to "not bookable / not open".
+const STATUS_AVAILABLE = "Available";
+const STATUS_RESERVED = "Reserved";
+const STATUS_CLOSED = "Closed";
+// Statuses that are "watchable" — currently unbookable, but the site exists and could
+// turn Available, so a cancellation-style alert is worth offering. A seasonal closure
+// rarely lifts, but the cron polls for "Available" regardless of why it was blocked,
+// so the mechanism works. Genuinely not-yet-released / missing nights are NOT here —
+// those route to "not-open" (a reminder), since there's no live inventory to watch.
+const WATCHABLE_STATUSES = new Set([STATUS_AVAILABLE, STATUS_RESERVED, STATUS_CLOSED]);
+// One campsite's nightly status, keyed by the rec.gov date string.
+export type CampsiteData = { availabilities: Record<string, string> };
 // The slice of a rec.gov month response we care about.
 export type MonthAvailability = { campsites?: Record<string, CampsiteData> };
 // A bookable stay. `to` is the checkout day (exclusive night), matching the
@@ -56,7 +71,7 @@ export function getMonthKeys(checkIn: Date, checkOut: Date): string[] {
   return Array.from(months);
 }
 
-// Every date with quantity === 1 on ANY campsite across all cached months. Used by
+// Every date marked "Available" on ANY campsite across all cached months. Used by
 // the calendar to dot individually-bookable nights — NOT for multi-night bookability.
 export function extractAvailableDates(monthCache: Record<string, unknown>): Set<string> {
   const result = new Set<string>();
@@ -64,33 +79,35 @@ export function extractAvailableDates(monthCache: Record<string, unknown>): Set<
     if (!data || typeof data !== "object") continue;
     const campsites = Object.values((data as MonthAvailability).campsites ?? {});
     for (const campsite of campsites) {
-      for (const [key, qty] of Object.entries(campsite.quantities)) {
-        if (qty === 1) result.add(key);
+      for (const [key, status] of Object.entries(campsite.availabilities)) {
+        if (status === STATUS_AVAILABLE) result.add(key);
       }
     }
   }
   return result;
 }
 
-// Merges many months' campsite-quantity maps into one map keyed by absolute date.
-// Same campsite id across months has its nightly quantities combined. Non-object
+// Merges many months' campsite availability maps into one map keyed by absolute date.
+// Same campsite id across months has its nightly statuses combined. Non-object
 // entries (e.g. a month that failed to fetch) are skipped.
 export function mergeCampsites(months: unknown[]): Record<string, CampsiteData> {
   const merged: Record<string, CampsiteData> = {};
   for (const data of months) {
     if (!data || typeof data !== "object") continue;
     for (const [id, campsite] of Object.entries((data as MonthAvailability).campsites ?? {})) {
-      if (!merged[id]) merged[id] = { quantities: {} };
-      Object.assign(merged[id].quantities, campsite.quantities);
+      if (!merged[id]) merged[id] = { availabilities: {} };
+      Object.assign(merged[id].availabilities, campsite.availabilities);
     }
   }
   return merged;
 }
 
 // Status of a specific [checkIn, checkOut) stay:
-//   "available" — some single campsite is free every night of the range
-//   "not-open"  — at least one night isn't in the data at all (booking window not open)
-//   "booked"    — nights are known but no single campsite covers the whole range
+//   "available" — some single campsite is "Available" every night of the range
+//   "not-open"  — some night is not watchable anywhere (not-yet-released or missing
+//                 from the data) → offer a reminder
+//   "booked"    — every night is watchable (taken or closed), but no single campsite
+//                 is available for the whole stay → offer a cancellation alert
 export function parseStatus(
   campsites: Record<string, CampsiteData>,
   checkIn: Date,
@@ -103,10 +120,11 @@ export function parseStatus(
     d.setDate(d.getDate() + 1);
   }
   for (const campsite of Object.values(campsites)) {
-    if (nights.every((n) => campsite.quantities[n] === 1)) return "available";
+    if (nights.every((n) => campsite.availabilities[n] === STATUS_AVAILABLE)) return "available";
   }
-  const allKeys = new Set(Object.values(campsites).flatMap((c) => Object.keys(c.quantities)));
-  if (nights.some((n) => !allKeys.has(n))) return "not-open";
+  const watchableSomewhere = (n: string) =>
+    Object.values(campsites).some((c) => WATCHABLE_STATUSES.has(c.availabilities[n]));
+  if (nights.some((n) => !watchableSomewhere(n))) return "not-open";
   return "booked";
 }
 
@@ -143,7 +161,7 @@ export function findAvailableWindows(
   for (const campsite of Object.values(campsites)) {
     let runStart: Date | null = null;
     for (let i = 0; i < nights.length; i++) {
-      const open = campsite.quantities[dateKey(nights[i])] === 1;
+      const open = campsite.availabilities[dateKey(nights[i])] === STATUS_AVAILABLE;
       if (open && runStart === null) runStart = nights[i];
       if (!open && runStart !== null) {
         emit(runStart, nights[i - 1]);
