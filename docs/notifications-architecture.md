@@ -108,18 +108,25 @@ just three month fetches merged before matching — no special-casing.
 One row per notification fired. Feeds the email payload, the "Needs Attention" section,
 and (later) real "Lately on Ember" data.
 
+A `notifications` table already existed (from the original schema) with a single
+`availability_date` + free-text `message`. Migration `20260623150000_notifications_v2.sql`
+reshapes it (it had never been written to) — a single date can't represent a multi-night
+opening, so it's replaced with a `found_date_from`/`found_date_to` range plus the dedup
+constraint. Resulting shape:
+
 ```sql
 notifications (
   id               uuid primary key default uuid_generate_v4(),
   alert_id         uuid not null references alerts(id) on delete cascade,
   user_id          uuid not null,        -- denormalized for cheap dashboard queries
-  facility_id      text not null,
+  facility_id      text not null,        -- FK -> cabins, cascade on delete
   found_date_from  date not null,        -- the opening we found (may differ from the alert
   found_date_to    date not null,        --   range under flexibility = 'flexible')
   email_to         text not null,        -- snapshot of recipient at send time
-  status           text not null default 'sent',  -- 'sent' | 'failed'
+  type             text not null default 'email',  -- delivery channel: email | sms | push
+  status           text not null default 'sent',   -- delivery outcome: sent | failed
   dismissed_at     timestamptz,          -- null = un-dismissed (shows in Needs Attention)
-  created_at       timestamptz default now(),
+  sent_at          timestamptz default now(),
 
   -- dedup ledger: one row per distinct opening, ever. cron inserts ON CONFLICT DO NOTHING.
   unique (alert_id, found_date_from, found_date_to)
