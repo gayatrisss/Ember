@@ -1,6 +1,6 @@
 export type DateCellState =
   | "default" // normal in-month date, shows hover treatment on CSS :hover
-  | "disabled" // past or before-range-start in-month date — greyed, non-interactive
+  | "disabled" // past in-month date — greyed, non-interactive
   | "empty" // out-of-month padding — blank cell, preserves grid alignment
   | "unavailable" // booked or booking-not-open — visually marked but still clickable
   | "day" // Mo/Tu/We… header labels, non-interactive

@@ -149,7 +149,6 @@ export function CalendarInput({
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const pickingEndDate = !!checkIn && !checkOut;
 
   // Build grid: Mon–Sun, padded with adjacent-month dates
   const first = new Date(year, month, 1);
@@ -202,7 +201,6 @@ export function CalendarInput({
             fetchedMonths != null && (!monthFetched || !(availableDates?.has(toDateKey(date)) ?? false));
 
           const isPast = date < today;
-          const isBeforeStart = pickingEndDate && date < checkIn!;
           const isStart = !!checkIn && sameDay(date, checkIn);
           const isEnd = !!checkOut && sameDay(date, checkOut);
           const isHoveredEnd =
@@ -225,7 +223,7 @@ export function CalendarInput({
           } else if (isEnd) {
             cellState = "selected";
             cellPosition = "end";
-          } else if (isPast || isBeforeStart) {
+          } else if (isPast) {
             cellState = "disabled";
           } else if (isHoveredEnd) {
             cellState = "hover";
