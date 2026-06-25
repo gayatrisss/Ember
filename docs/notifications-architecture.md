@@ -209,6 +209,17 @@ See `docs/alerts-architecture.md`.
 
 ---
 
+## Schedule
+
+`vercel.json` runs `/api/cron/check-alerts` **daily** (`0 13 * * *`). The Vercel **Hobby**
+plan caps crons at once per day and rejects sub-daily schedules; on **Pro** this would be
+`*/15 * * * *`. Daily is fine for the portfolio because the cron's correctness is covered by
+tests and live demos use the force-trigger button — neither depends on real polling cadence.
+For genuinely frequent free polling, an external scheduler (Upstash QStash, GitHub Actions)
+can hit the `CRON_SECRET`-guarded route without app changes.
+
+---
+
 ## Env vars
 
 | Key | Purpose |
@@ -217,3 +228,4 @@ See `docs/alerts-architecture.md`.
 | `CRON_SECRET` | Vercel sets `Authorization: Bearer` on cron calls; route rejects mismatches |
 | `EMBER_MOCK_AVAILABILITY` | `1` to short-circuit the fetch layer with synthetic availability |
 | `EMBER_FROM_EMAIL` | sender address (defaults to `onboarding@resend.dev` in dev) |
+| `NEXT_PUBLIC_SITE_URL` | base URL for email links + the wordmark image (prod domain; localhost in dev) |
