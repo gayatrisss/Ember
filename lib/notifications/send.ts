@@ -148,13 +148,20 @@ export function liveSendDeps(supabase: SupabaseClient): SendDeps {
     },
     deliver: async (to, payload) => {
       const { Resend } = await import("resend");
+      const { render } = await import("@react-email/components");
+      const { createElement } = await import("react");
       const { AvailabilityAlert } = await import("@/emails/availability-alert");
+      // Render to HTML ourselves rather than passing `react:` — Resend's internal
+      // renderer fails to resolve @react-email/render against @react-email/components
+      // v1 ("Failed to render React component"). This is the same render() the /emails
+      // preview uses, so it's a known-good path.
+      const html = await render(createElement(AvailabilityAlert, payload));
       const resend = new Resend(process.env.RESEND_API_KEY);
       const { error } = await resend.emails.send({
         from: process.env.EMBER_FROM_EMAIL ?? "Ember <onboarding@resend.dev>",
         to,
         subject: payload.subject,
-        react: AvailabilityAlert(payload),
+        html,
       });
       if (error) throw new Error(error.message);
     },
