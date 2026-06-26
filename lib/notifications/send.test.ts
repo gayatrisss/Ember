@@ -48,7 +48,7 @@ describe("buildEmailPayload", () => {
     expect(payload.price).toBe("$50/night");
     expect(payload.location).toBe("Gallatin National Forest");
     expect(payload.bookUrl).toBe("https://www.recreation.gov/camping/campgrounds/234309");
-    expect(payload.manageUrl).toMatch(/\/my-alerts$/);
+    expect(payload.manageUrl).toMatch(/\/my-alerts\?alert=a1$/);
     expect(payload.logoUrl).toMatch(/\/email\/logo\.png$/);
   });
 

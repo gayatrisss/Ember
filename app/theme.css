@@ -17,6 +17,7 @@
   --color-wax-muted: #b2afa6;
   --color-ash: #171a17;          /* Expanded alert card header strip surface */
   --color-slate: #6d736e;        /* Muted text/icons on light (wax) surfaces — e.g. nav search */
+  --color-smoke-deep: #35444d;   /* Info toast surface (smoke at 30% brightness) */
 
   /* === Typography === */
   --font-display: var(--font-fraunces);
@@ -33,6 +34,7 @@
   --width-copy-wide: 300px;
   --width-sidebar: 440px;
   --container-nav-search: 600px;   /* max-width of the centered nav search bar */
+  --container-toast: 582px;        /* max-width of a toast */
   --width-alert-thumb: 106px;
   --height-alert-thumb: 71px;
   --width-opening-card: 300px;     /* min-width of an opening window in the notification carousel */

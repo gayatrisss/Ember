@@ -213,4 +213,12 @@
   .no-scrollbar::-webkit-scrollbar {
     display: none;
   }
+
+  /* Deep-link target highlight (from email links) — ember glow; fades out via the
+     wrapper's transition-shadow when the class is removed. */
+  .deep-link-flash {
+    box-shadow:
+      0 0 0 2px var(--color-ember),
+      var(--shadow-ember-md);
+  }
 }

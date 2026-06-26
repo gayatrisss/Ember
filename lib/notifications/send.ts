@@ -58,7 +58,7 @@ export function buildEmailPayload(cabin: CabinInfo, opening: Opening): EmailPayl
     price: cabin.nightly_rate != null ? formatRate(String(cabin.nightly_rate)) : null,
     location: cabin.rec_area_name ?? null,
     bookUrl: `https://www.recreation.gov/camping/campgrounds/${opening.facilityId}`,
-    manageUrl: `${siteUrl()}/my-alerts`,
+    manageUrl: `${siteUrl()}/my-alerts?alert=${opening.alertId}`,
     logoUrl: `${siteUrl()}/email/logo.png`,
   };
 }

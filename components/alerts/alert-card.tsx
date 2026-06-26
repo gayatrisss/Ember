@@ -36,15 +36,28 @@ export function AlertCard({
   imageUrl,
   status,
   flexibility,
-}: AlertCardProps) {
+  defaultExpanded = false,
+}: AlertCardProps & { defaultExpanded?: boolean }) {
   const router = useRouter();
 
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(defaultExpanded);
   const [cancelState, setCancelState] = useState<CancelState>("idle");
   const [showCancelModal, setShowCancelModal] = useState(false);
 
   const isCancelling = cancelState !== "idle";
   const displayStatus = isCancelling ? "cancelled" : status;
+
+  // Toggle expansion and keep the URL's ?alert param in sync (shareable deep links).
+  // history.replaceState avoids a Next navigation / server refetch.
+  function toggleExpanded() {
+    if (isCancelling) return;
+    const next = !expanded;
+    setExpanded(next);
+    const url = new URL(window.location.href);
+    if (next) url.searchParams.set("alert", alertId);
+    else if (url.searchParams.get("alert") === alertId) url.searchParams.delete("alert");
+    window.history.replaceState(null, "", `${url.pathname}${url.search}`);
+  }
 
   const badgeTypeMap: Record<string, "default" | "accent" | "error"> = {
     active: "default",
@@ -221,7 +234,7 @@ export function AlertCard({
             <div className="mt-8 border-t border-wax-muted/20">
               <button
                 type="button"
-                onClick={() => !isCancelling && setExpanded(!expanded)}
+                onClick={toggleExpanded}
                 disabled={isCancelling}
                 className="w-full pt-4 flex items-center justify-center gap-2"
               >
@@ -242,7 +255,7 @@ export function AlertCard({
         {/* ── Desktop card ── */}
         <div
           className={`hidden lg:block bg-evergreen rounded-lg overflow-hidden ${!isCancelling ? "cursor-pointer" : "cursor-default"}`}
-          onClick={() => !isCancelling && setExpanded(!expanded)}
+          onClick={toggleExpanded}
         >
           <div className="flex p-5 items-center justify-between">
             <Link

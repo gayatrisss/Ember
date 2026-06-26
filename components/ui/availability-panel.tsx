@@ -6,7 +6,9 @@ import { BookingPanel } from "@/components/ui/booking-panel";
 import { CalendarInput } from "@/components/ui/calendar-input";
 import { ToggleOptions } from "@/components/ui/toggle-options";
 import { Spinner } from "@/components/ui/spinner";
+import { Info, Send } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { useToast } from "@/components/ui/toast-provider";
 import {
   monthKey,
   toDateStr,
@@ -111,15 +113,76 @@ function SetupContent({
   );
 }
 
-function ConfirmedContent({ cabinName, email }: { cabinName: string; email: string | null }) {
+function ConfirmedContent({
+  cabinName,
+  email,
+  alertId,
+}: {
+  cabinName: string;
+  email: string | null;
+  // Set only for cancellation alerts — enables the "preview the email" action.
+  alertId: string | null;
+}) {
+  const { toast } = useToast();
+  const [sending, setSending] = useState(false);
+
+  async function sendPreview() {
+    if (!alertId || sending) return;
+    setSending(true);
+    try {
+      const res = await fetch("/api/dev/trigger-alert", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ alertId }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        toast({
+          intent: "success",
+          title: "Preview sent!",
+          description: `Check ${email ?? "your inbox"}.`,
+          icon: <Info size={24} />,
+        });
+      } else {
+        toast({
+          intent: "error",
+          title: "Couldn't send the preview",
+          description: data.detail ?? data.error ?? "Something went wrong.",
+          icon: <Info size={24} />,
+        });
+      }
+    } catch {
+      toast({
+        intent: "error",
+        title: "Couldn't send the preview",
+        description: "Something went wrong.",
+        icon: <Info size={24} />,
+      });
+    } finally {
+      setSending(false);
+    }
+  }
+
   return (
     <div className="flex flex-col items-center justify-center text-center h-full">
       <div className="text-5xl">🏕️</div>
       <p className="text-heading text-wax mt-6">Fantastic! The alert is set.</p>
       <p className="text-body text-wax/60 mt-3">
         We&apos;ll reach out the moment {cabinName} opens up.
+        {alertId && " Curious what we send? Email yourself a preview."}
       </p>
-      {email && <p className="text-label text-smoke mt-2">{email}</p>}
+
+      {alertId && (
+        <button
+          type="button"
+          onClick={sendPreview}
+          disabled={sending}
+          className="mt-6 inline-flex items-center gap-2 bg-ember text-wax text-body px-6 py-3 rounded-lg hover:brightness-110 transition-all disabled:opacity-70 disabled:cursor-not-allowed"
+        >
+          Trigger test email
+          {sending ? <Spinner size={16} /> : <Send size={16} />}
+        </button>
+      )}
     </div>
   );
 }
@@ -163,6 +226,7 @@ export function AvailabilityPanel({
   const [flexibility, setFlexibility] = useState("strict");
   const [notifyWhen, setNotifyWhen] = useState("1week");
   const [confirmedEmail, setConfirmedEmail] = useState<string | null>(null);
+  const [confirmedAlertId, setConfirmedAlertId] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -225,6 +289,7 @@ export function AvailabilityPanel({
       }
 
       setConfirmedEmail(data.email);
+      setConfirmedAlertId(type === "cancellation" ? data.alertId : null);
       setView("confirmed");
     } catch {
       setSubmitError("Something went wrong. Please try again.");
@@ -365,8 +430,8 @@ export function AvailabilityPanel({
   switch (view) {
     case "confirmed":
       title = "";
-      body = <ConfirmedContent cabinName={cabinName} email={confirmedEmail} />;
-      cta = <CtaButton>Find more cabins</CtaButton>;
+      body = <ConfirmedContent cabinName={cabinName} email={confirmedEmail} alertId={confirmedAlertId} />;
+      cta = null;
       break;
 
     case "alert-setup":

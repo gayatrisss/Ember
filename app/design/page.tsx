@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Mail } from "lucide-react";
+import { Info, Mail } from "lucide-react";
 import { Field } from "@/components/ui/field";
 import { TextInput } from "@/components/ui/text-input";
 import { ToggleOptions } from "@/components/ui/toggle-options";
@@ -19,6 +19,8 @@ import { Search } from "@/components/ui/search";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
+import { Toast } from "@/components/ui/toast";
+import { useToast } from "@/components/ui/toast-provider";
 
 const DATE_CELL_STATES: { label: string; state: DateCellState; position: DateCellPosition }[] = [
   { label: "Default", state: "default", position: "single" },
@@ -106,6 +108,7 @@ export default function DesignPage() {
   const [calOut, setCalOut] = useState<Date | null>(null);
   const [modalVariant, setModalVariant] = useState<"default" | "destructive">("default");
   const [modalOpen, setModalOpen] = useState(false);
+  const { toast } = useToast();
 
   return (
     <div className="min-h-screen bg-night">
@@ -204,6 +207,62 @@ export default function DesignPage() {
             <VariantLabel>link</VariantLabel>
             <Button variant="link">View details</Button>
           </div>
+        </div>
+      </section>
+
+      {/* Toast */}
+      <section className="page-container border-b border-wax/10 py-16">
+        <SectionLabel>Toast</SectionLabel>
+        <VariantLabel>Fire via useToast() — top-right, auto-dismiss</VariantLabel>
+        <div className="flex flex-wrap gap-4 mb-10">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() =>
+              toast({ intent: "info", title: "Heads up", description: "An informational message.", icon: <Info size={24} /> })
+            }
+          >
+            Info toast
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() =>
+              toast({ intent: "success", title: "Preview sent!", description: "Check your inbox.", icon: <Info size={24} /> })
+            }
+          >
+            Success toast
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() =>
+              toast({ intent: "error", title: "Couldn't send", description: "Something went wrong.", icon: <Info size={24} /> })
+            }
+          >
+            Error toast
+          </Button>
+        </div>
+        <VariantLabel>Inline visual</VariantLabel>
+        <div className="flex flex-col gap-4 max-w-toast">
+          <Toast
+            intent="info"
+            title="Heads up"
+            description="An informational message for the user."
+            icon={<Info size={24} />}
+          />
+          <Toast
+            intent="success"
+            title="Preview sent!"
+            description="Check your inbox for the sample email."
+            icon={<Info size={24} />}
+          />
+          <Toast
+            intent="error"
+            title="Couldn't send"
+            description="Something went wrong. Please try again."
+            icon={<Info size={24} />}
+          />
         </div>
       </section>
 

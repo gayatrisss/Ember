@@ -1,5 +1,6 @@
 import Link from "next/link";
 import TopNav from "@/components/landing/top-nav";
+import { DeepLinkScroll } from "@/components/alerts/deep-link-scroll";
 import Footer from "@/components/landing/footer";
 import { createClient } from "@/lib/supabase/server";
 import { AlertCardList } from "@/components/alerts/alert-card-list";
@@ -85,7 +86,12 @@ function toNotificationCardProps(rows: NotificationRow[]): NotificationCardProps
   };
 }
 
-export default async function AlertsPage() {
+export default async function AlertsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ alert?: string }>;
+}) {
+  const { alert: targetAlertId } = await searchParams;
   const supabase = await createClient();
 
   const {
@@ -143,6 +149,7 @@ export default async function AlertsPage() {
     <div className="min-h-screen bg-night flex flex-col">
       <TopNav email={user?.email ?? null} name={user?.user_metadata?.full_name ?? null} />
       <main className="flex-1 page-container pt-8 lg:pt-12 pb-page">
+        <DeepLinkScroll />
         <h1 className="text-display-fraunces text-wax">Alerts</h1>
 
         {hasAlerts ? (
@@ -152,7 +159,13 @@ export default async function AlertsPage() {
                 <p className="text-body text-wax uppercase">Needs Attention</p>
                 <div className="mt-section-content flex flex-col gap-6">
                   {needsAttention.map((card) => (
-                    <NotificationCard key={card.alertId} {...card} />
+                    <div
+                      key={card.alertId}
+                      id={`alert-${card.alertId}`}
+                      className="rounded-lg transition-shadow duration-700"
+                    >
+                      <NotificationCard {...card} />
+                    </div>
                   ))}
                 </div>
               </section>
@@ -160,13 +173,13 @@ export default async function AlertsPage() {
             {active.length > 0 && (
               <section>
                 <p className="text-body text-wax uppercase">Currently Watching</p>
-                <AlertCardList alerts={active.map(toCardProps)} />
+                <AlertCardList alerts={active.map(toCardProps)} targetAlertId={targetAlertId} />
               </section>
             )}
             {cancelled.length > 0 && (
               <section>
                 <p className="text-body text-wax uppercase">Past Alerts</p>
-                <AlertCardList alerts={cancelled.map(toCardProps)} />
+                <AlertCardList alerts={cancelled.map(toCardProps)} targetAlertId={targetAlertId} />
               </section>
             )}
           </div>

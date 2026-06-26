@@ -48,16 +48,20 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
   }
 
-  const { error } = await supabase.from("alerts").insert({
-    user_id: user.id,
-    facility_id: facilityId,
-    type,
-    date_from: dateFrom,
-    date_to: dateTo,
-    flexibility: flexibility ?? null,
-    notify_when: notifyWhen ?? null,
-    notification_method: notificationMethod ?? "email",
-  });
+  const { data, error } = await supabase
+    .from("alerts")
+    .insert({
+      user_id: user.id,
+      facility_id: facilityId,
+      type,
+      date_from: dateFrom,
+      date_to: dateTo,
+      flexibility: flexibility ?? null,
+      notify_when: notifyWhen ?? null,
+      notification_method: notificationMethod ?? "email",
+    })
+    .select("id")
+    .single();
 
   if (error) {
     console.log("[ember] POST /api/alerts error", error.code, error.message);
@@ -70,5 +74,5 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "unknown" }, { status: 500 });
   }
 
-  return NextResponse.json({ ok: true, email: user.email });
+  return NextResponse.json({ ok: true, email: user.email, alertId: data.id });
 }
