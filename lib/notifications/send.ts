@@ -10,7 +10,7 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Opening } from "@/lib/notifications/check";
-import { formatCabinName, formatRate } from "@/lib/format";
+import { formatCabinName, formatRate, formatLongDateRange } from "@/lib/format";
 
 export type CabinInfo = {
   facility_name: string;
@@ -44,24 +44,6 @@ export type SendDeps = {
   markFailed: (opening: Opening) => Promise<void>;
 };
 
-function ordinal(n: number): string {
-  const suffixes = ["th", "st", "nd", "rd"];
-  const v = n % 100;
-  return `${n}${suffixes[(v - 20) % 10] ?? suffixes[v] ?? suffixes[0]}`;
-}
-
-// "2026-07-09","2026-07-12" -> "July 9th–12th" (or "July 30th – August 2nd" across months).
-export function formatEmailDateRange(from: string, to: string): string {
-  const [fy, fm, fd] = from.split("-").map(Number);
-  const [ty, tm, td] = to.split("-").map(Number);
-  const fromDate = new Date(fy, fm - 1, fd);
-  const toDate = new Date(ty, tm - 1, td);
-  const monthName = (d: Date) => d.toLocaleString("en-US", { month: "long" });
-  const fromPart = `${monthName(fromDate)} ${ordinal(fd)}`;
-  if (fy === ty && fm === tm) return `${fromPart}–${ordinal(td)}`;
-  return `${fromPart} – ${monthName(toDate)} ${ordinal(td)}`;
-}
-
 function siteUrl(): string {
   return process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 }
@@ -72,13 +54,32 @@ export function buildEmailPayload(cabin: CabinInfo, opening: Opening): EmailPayl
   return {
     subject: `🏕️ ${cabinName} just opened up`,
     cabinName,
-    dateRange: formatEmailDateRange(opening.from, opening.to),
+    dateRange: formatLongDateRange(opening.from, opening.to),
     price: cabin.nightly_rate != null ? formatRate(String(cabin.nightly_rate)) : null,
     location: cabin.rec_area_name ?? null,
     bookUrl: `https://www.recreation.gov/camping/campgrounds/${opening.facilityId}`,
     manageUrl: `${siteUrl()}/my-alerts`,
     logoUrl: `${siteUrl()}/email/logo.png`,
   };
+}
+
+// Renders the availability email to HTML and sends it via Resend. Throws on failure.
+// Shared by the cron sender and the dev force-trigger. Rendering to HTML (rather than
+// passing `react:`) sidesteps Resend's broken React renderer with @react-email v1.
+export async function deliverEmail(to: string, payload: EmailPayload): Promise<void> {
+  const { Resend } = await import("resend");
+  const { render } = await import("@react-email/components");
+  const { createElement } = await import("react");
+  const { AvailabilityAlert } = await import("@/emails/availability-alert");
+  const html = await render(createElement(AvailabilityAlert, payload));
+  const resend = new Resend(process.env.RESEND_API_KEY);
+  const { error } = await resend.emails.send({
+    from: process.env.EMBER_FROM_EMAIL ?? "Ember <onboarding@resend.dev>",
+    to,
+    subject: payload.subject,
+    html,
+  });
+  if (error) throw new Error(error.message);
 }
 
 // Claims, sends, and records one opening. Safe to call repeatedly for the same opening:
@@ -146,25 +147,7 @@ export function liveSendDeps(supabase: SupabaseClient): SendDeps {
       }
       return data as CabinInfo;
     },
-    deliver: async (to, payload) => {
-      const { Resend } = await import("resend");
-      const { render } = await import("@react-email/components");
-      const { createElement } = await import("react");
-      const { AvailabilityAlert } = await import("@/emails/availability-alert");
-      // Render to HTML ourselves rather than passing `react:` — Resend's internal
-      // renderer fails to resolve @react-email/render against @react-email/components
-      // v1 ("Failed to render React component"). This is the same render() the /emails
-      // preview uses, so it's a known-good path.
-      const html = await render(createElement(AvailabilityAlert, payload));
-      const resend = new Resend(process.env.RESEND_API_KEY);
-      const { error } = await resend.emails.send({
-        from: process.env.EMBER_FROM_EMAIL ?? "Ember <onboarding@resend.dev>",
-        to,
-        subject: payload.subject,
-        html,
-      });
-      if (error) throw new Error(error.message);
-    },
+    deliver: (to, payload) => deliverEmail(to, payload),
     markFailed: async (opening) => {
       const { error } = await supabase
         .from("notifications")

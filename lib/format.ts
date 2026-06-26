@@ -21,6 +21,38 @@ export function formatDateRange(from: string, to: string): string {
   return `${fmt.format(f)} – ${fmt.format(t)}`
 }
 
+function ordinal(n: number): string {
+  const suffixes = ["th", "st", "nd", "rd"]
+  const v = n % 100
+  return `${n}${suffixes[(v - 20) % 10] ?? suffixes[v] ?? suffixes[0]}`
+}
+
+// "2026-07-09","2026-07-12" -> "July 9th-12th" (or "July 30th - August 2nd" across
+// months). Used in the availability email and the notification cards.
+export function formatLongDateRange(from: string, to: string): string {
+  const [fy, fm, fd] = from.split("-").map(Number)
+  const [ty, tm, td] = to.split("-").map(Number)
+  const fromDate = new Date(fy, fm - 1, fd)
+  const toDate = new Date(ty, tm - 1, td)
+  const monthName = (d: Date) => d.toLocaleString("en-US", { month: "long" })
+  const fromPart = `${monthName(fromDate)} ${ordinal(fd)}`
+  if (fy === ty && fm === tm) return `${fromPart}-${ordinal(td)}`
+  return `${fromPart} - ${monthName(toDate)} ${ordinal(td)}`
+}
+
+// A short relative time like "12s ago", "4 hrs ago", "3 days ago". Computed once
+// (e.g. server-side) and passed as a string so it doesn't cause hydration drift.
+export function timeAgo(iso: string): string {
+  const secs = Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 1000))
+  if (secs < 60) return `${secs}s ago`
+  const mins = Math.floor(secs / 60)
+  if (mins < 60) return `${mins} min${mins === 1 ? "" : "s"} ago`
+  const hrs = Math.floor(mins / 60)
+  if (hrs < 24) return `${hrs} hr${hrs === 1 ? "" : "s"} ago`
+  const days = Math.floor(hrs / 24)
+  return `${days} day${days === 1 ? "" : "s"} ago`
+}
+
 export function getCabinType(name: string): string {
   const n = name.toLowerCase()
   if (n.includes("lookout")) return "Lookout"

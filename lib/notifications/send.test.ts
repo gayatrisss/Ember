@@ -1,11 +1,11 @@
 import { describe, it, expect, vi } from "vitest";
 import {
-  formatEmailDateRange,
   buildEmailPayload,
   sendOpeningNotification,
   type CabinInfo,
   type SendDeps,
 } from "@/lib/notifications/send";
+import { formatLongDateRange } from "@/lib/format";
 import type { Opening } from "@/lib/notifications/check";
 
 const opening: Opening = {
@@ -23,19 +23,19 @@ const cabin: CabinInfo = {
   nightly_rate: 50,
 };
 
-describe("formatEmailDateRange", () => {
+describe("formatLongDateRange", () => {
   it("uses one month name for a same-month range", () => {
-    expect(formatEmailDateRange("2026-07-09", "2026-07-12")).toBe("July 9th–12th");
+    expect(formatLongDateRange("2026-07-09", "2026-07-12")).toBe("July 9th-12th");
   });
 
   it("spans two month names across a boundary", () => {
-    expect(formatEmailDateRange("2026-07-30", "2026-08-02")).toBe("July 30th – August 2nd");
+    expect(formatLongDateRange("2026-07-30", "2026-08-02")).toBe("July 30th - August 2nd");
   });
 
   it("applies correct ordinal suffixes", () => {
-    expect(formatEmailDateRange("2026-07-01", "2026-07-03")).toBe("July 1st–3rd");
-    expect(formatEmailDateRange("2026-07-21", "2026-07-22")).toBe("July 21st–22nd");
-    expect(formatEmailDateRange("2026-07-11", "2026-07-13")).toBe("July 11th–13th");
+    expect(formatLongDateRange("2026-07-01", "2026-07-03")).toBe("July 1st-3rd");
+    expect(formatLongDateRange("2026-07-21", "2026-07-22")).toBe("July 21st-22nd");
+    expect(formatLongDateRange("2026-07-11", "2026-07-13")).toBe("July 11th-13th");
   });
 });
 
@@ -44,7 +44,7 @@ describe("buildEmailPayload", () => {
     const payload = buildEmailPayload(cabin, opening);
     expect(payload.subject).toBe("🏕️ Maxey Cabin just opened up");
     expect(payload.cabinName).toBe("Maxey Cabin");
-    expect(payload.dateRange).toBe("July 9th–12th");
+    expect(payload.dateRange).toBe("July 9th-12th");
     expect(payload.price).toBe("$50/night");
     expect(payload.location).toBe("Gallatin National Forest");
     expect(payload.bookUrl).toBe("https://www.recreation.gov/camping/campgrounds/234309");
@@ -73,7 +73,7 @@ describe("sendOpeningNotification", () => {
     expect(deps.deliver).toHaveBeenCalledOnce();
     expect(deps.deliver).toHaveBeenCalledWith(
       "camper@example.com",
-      expect.objectContaining({ cabinName: "Maxey Cabin", dateRange: "July 9th–12th" })
+      expect.objectContaining({ cabinName: "Maxey Cabin", dateRange: "July 9th-12th" })
     );
   });
 
