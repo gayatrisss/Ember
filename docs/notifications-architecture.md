@@ -49,9 +49,12 @@ across overlapping cron runs.
 
 > **Dashboard impact** — this overrides the earlier "Needs Attention = `status='triggered'`"
 > decision (`_state.md` / `docs/alerts-architecture.md`). A multi-opening watch can't be a
-> single flag. New split: **Currently Watching** = active alerts; **Needs Attention** =
-> un-dismissed `notifications` rows (the actual openings, each with a book link + dismiss).
-> Two different entities — `/my-alerts` query needs reworking.
+> single flag. New split: **Needs Attention** = un-dismissed `notifications` grouped by
+> alert (one card per alert, with a "window" sub-card per opening: book link + dismiss);
+> **Currently Watching** = active alerts that have NO live opening (an alert with un-dismissed
+> openings shows only in Needs Attention, and returns to Watching once they're all dismissed);
+> **Past Alerts** = cancelled. Implemented in `app/my-alerts/page.tsx` +
+> `components/alerts/notification-card.tsx`.
 
 **v1 assumptions:** no minimum-nights floor (a single open night in a flexible range is an
 opening); a found block is deduped by exact `(from, to)`, so a run that later splits into

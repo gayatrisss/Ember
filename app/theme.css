@@ -35,6 +35,7 @@
   --container-nav-search: 600px;   /* max-width of the centered nav search bar */
   --width-alert-thumb: 106px;
   --height-alert-thumb: 71px;
+  --width-opening-card: 300px;     /* min-width of an opening window in the notification carousel */
   --height-alert-header: 46px;   /* Expanded alert card header strip */
   --spacing-section-content: 46px;
 

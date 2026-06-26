@@ -38,10 +38,8 @@ export function AlertCard({
   flexibility,
 }: AlertCardProps) {
   const router = useRouter();
-  const isTriggered = status === "triggered";
 
   const [expanded, setExpanded] = useState(false);
-  const [metaVisible, setMetaVisible] = useState(true);
   const [cancelState, setCancelState] = useState<CancelState>("idle");
   const [showCancelModal, setShowCancelModal] = useState(false);
 
@@ -50,12 +48,10 @@ export function AlertCard({
 
   const badgeTypeMap: Record<string, "default" | "accent" | "error"> = {
     active: "default",
-    triggered: "accent",
     cancelled: "error",
   };
   const badgeLabelMap: Record<string, string> = {
     active: "Watching",
-    triggered: "Available",
     cancelled: "Cancelled",
   };
   const badgeType = badgeTypeMap[displayStatus] ?? "default";
@@ -152,103 +148,12 @@ export function AlertCard({
     />
   );
 
-  // ─── Needs Attention (triggered) ────────────────────────────────────────────
-  if (isTriggered) {
-    return (
-      <>
-        <motion.div
-          animate={{ opacity: cancelState === "fading" ? 0 : 1 }}
-          transition={{ duration: 0.35 }}
-          onAnimationComplete={() => {
-            if (cancelState === "fading") router.refresh();
-          }}
-        >
-          <div className="bg-evergreen rounded-lg overflow-hidden">
-            <div className="bg-ash h-alert-header flex items-center justify-between px-6">
-              <span className="text-data text-smoke uppercase">
-                Last Checked <span className="text-wax-muted">—</span>
-              </span>
-            </div>
-
-            <div className="px-20 pt-12 pb-15">
-              <div className="flex justify-between items-start">
-                <div className="flex flex-col gap-2">
-                  <Link
-                    href={`/cabin/${facilityId}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-display-fraunces-sm text-white hover:opacity-80 transition-opacity"
-                  >
-                    {formatCabinName(cabinName)}
-                  </Link>
-                  {recAreaName && <p className="text-body text-wax-muted">{recAreaName}</p>}
-                </div>
-                <div className="flex flex-col gap-2 items-end shrink-0">
-                  <p className="text-label text-wax-muted uppercase">Dates Watching</p>
-                  <p className="text-body text-white">{dateRange}</p>
-                </div>
-              </div>
-
-              <div className="pt-16">
-                <p className="text-body text-smoke">
-                  Keep an eye out here for notifications regarding availability
-                </p>
-              </div>
-
-              <div className="mt-8 h-px bg-smoke/20" />
-
-              <button
-                type="button"
-                className="w-full pt-6 flex items-center justify-between hover:opacity-80 transition-opacity"
-                onClick={() => setMetaVisible(!metaVisible)}
-              >
-                <div className="flex gap-4 items-center">
-                  <span className="text-body text-wax">
-                    {metaVisible ? "Hide" : "Show"} alert details
-                  </span>
-                  <span className="text-body text-wax-muted">settings, history, and more</span>
-                </div>
-                <motion.div
-                  animate={{ rotate: metaVisible ? 180 : 0 }}
-                  transition={{ duration: 0.3, ease: expandEase }}
-                >
-                  <ChevronDown size={24} className="text-wax" />
-                </motion.div>
-              </button>
-
-              <AnimatePresence initial={false}>
-                {metaVisible && (
-                  <motion.div
-                    key="meta"
-                    className="overflow-hidden"
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: "auto", opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.3, ease: expandEase }}
-                  >
-                    <div className="pt-16 px-10 flex flex-col gap-12">
-                      {settingsRows}
-                      {locationSection}
-                      {cancelButton}
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-          </div>
-        </motion.div>
-        {cancelModal}
-      </>
-    );
-  }
-
   // ─── Currently Watching / Past Alerts (active | cancelled) ──────────────────
   const showBody = expanded && !isCancelling;
 
   // Mobile overlay badge: always fill for visibility against the photo
   const mobileBadgeTypeMap: Record<string, "accent" | "error"> = {
     active: "accent",
-    triggered: "accent",
     cancelled: "error",
   };
   const mobileBadgeType = mobileBadgeTypeMap[displayStatus] ?? "accent";

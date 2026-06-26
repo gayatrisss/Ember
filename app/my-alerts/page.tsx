@@ -3,7 +3,9 @@ import TopNav from "@/components/landing/top-nav";
 import Footer from "@/components/landing/footer";
 import { createClient } from "@/lib/supabase/server";
 import { AlertCardList } from "@/components/alerts/alert-card-list";
+import { NotificationCard, type NotificationCardProps } from "@/components/alerts/notification-card";
 import type { AlertCardProps } from "@/components/alerts/alert-card";
+import { formatRate, formatLongDateRange, timeAgo } from "@/lib/format";
 
 type CabinImage = { url: string; is_preview: boolean | null };
 
@@ -23,6 +25,26 @@ type AlertRow = {
   } | null;
 };
 
+type NotificationRow = {
+  id: string;
+  alert_id: string;
+  found_date_from: string;
+  found_date_to: string;
+  sent_at: string;
+  alerts: {
+    id: string;
+    facility_id: string;
+    date_from: string;
+    date_to: string;
+    flexibility: string | null;
+  } | null;
+  cabins: {
+    facility_name: string;
+    rec_area_name: string | null;
+    nightly_rate: number | null;
+  } | null;
+};
+
 function toCardProps(alert: AlertRow): AlertCardProps {
   const images = alert.cabins?.cabin_images ?? [];
   const image = images.find((i) => i.is_preview) ?? images[0] ?? null;
@@ -39,12 +61,52 @@ function toCardProps(alert: AlertRow): AlertCardProps {
   };
 }
 
+// Builds one notification card from all un-dismissed openings for a single alert.
+// `rows` are pre-sorted newest-first, so rows[0] holds the most recent opening.
+function toNotificationCardProps(rows: NotificationRow[]): NotificationCardProps {
+  const first = rows[0];
+  const alert = first.alerts!;
+  const cabin = first.cabins;
+  return {
+    alertId: alert.id,
+    facilityId: alert.facility_id,
+    cabinName: cabin?.facility_name ?? alert.facility_id,
+    recAreaName: cabin?.rec_area_name ?? null,
+    price: cabin?.nightly_rate != null ? formatRate(String(cabin.nightly_rate)) : null,
+    watchDates: formatLongDateRange(alert.date_from, alert.date_to),
+    flexibility: alert.flexibility,
+    lastChecked: "—",
+    notifiedAgo: timeAgo(first.sent_at),
+    windows: rows.map((r) => ({
+      notificationId: r.id,
+      dates: formatLongDateRange(r.found_date_from, r.found_date_to),
+      sentAgo: timeAgo(r.sent_at),
+    })),
+  };
+}
+
 export default async function AlertsPage() {
   const supabase = await createClient();
 
   const {
     data: { user },
   } = await supabase.auth.getUser();
+
+  // Un-dismissed openings (Needs Attention), limited to active alerts.
+  const { data: rawNotifications } = user
+    ? await supabase
+        .from("notifications")
+        .select(`
+          id, alert_id, found_date_from, found_date_to, sent_at,
+          alerts!inner ( id, facility_id, date_from, date_to, flexibility ),
+          cabins ( facility_name, rec_area_name, nightly_rate )
+        `)
+        .eq("user_id", user.id)
+        .is("dismissed_at", null)
+        .eq("alerts.status", "active")
+        .order("sent_at", { ascending: false })
+        .returns<NotificationRow[]>()
+    : { data: null };
 
   const { data: rawAlerts } = user
     ? await supabase
@@ -58,10 +120,24 @@ export default async function AlertsPage() {
         .returns<AlertRow[]>()
     : { data: null };
 
-  const triggered = rawAlerts?.filter((a) => a.status === "triggered") ?? [];
-  const active = rawAlerts?.filter((a) => a.status === "active") ?? [];
-  const cancelled = rawAlerts?.filter((a) => a.status === "cancelled") ?? [];
-  const hasAlerts = triggered.length > 0 || active.length > 0 || cancelled.length > 0;
+  // Group openings by alert.
+  const groups = new Map<string, NotificationRow[]>();
+  for (const n of rawNotifications ?? []) {
+    if (!n.alerts) continue;
+    const arr = groups.get(n.alert_id) ?? [];
+    arr.push(n);
+    groups.set(n.alert_id, arr);
+  }
+  const notifiedAlertIds = new Set(groups.keys());
+  const needsAttention = [...groups.values()].map(toNotificationCardProps);
+
+  // Currently Watching = active alerts WITHOUT a live opening (those show in Needs
+  // Attention instead). Past = cancelled.
+  const active = (rawAlerts ?? []).filter(
+    (a) => a.status === "active" && !notifiedAlertIds.has(a.id)
+  );
+  const cancelled = (rawAlerts ?? []).filter((a) => a.status === "cancelled");
+  const hasAlerts = needsAttention.length > 0 || active.length > 0 || cancelled.length > 0;
 
   return (
     <div className="min-h-screen bg-night flex flex-col">
@@ -71,10 +147,14 @@ export default async function AlertsPage() {
 
         {hasAlerts ? (
           <div className="mt-30 flex flex-col gap-20">
-            {triggered.length > 0 && (
+            {needsAttention.length > 0 && (
               <section>
                 <p className="text-body text-wax uppercase">Needs Attention</p>
-                <AlertCardList alerts={triggered.map(toCardProps)} />
+                <div className="mt-section-content flex flex-col gap-6">
+                  {needsAttention.map((card) => (
+                    <NotificationCard key={card.alertId} {...card} />
+                  ))}
+                </div>
               </section>
             )}
             {active.length > 0 && (
