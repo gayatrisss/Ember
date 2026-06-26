@@ -120,8 +120,33 @@ RLS: users can select/insert/update/delete only their own rows (`auth.uid() = us
 
 Architecture documented in `docs/alerts-architecture.md`.
 
-### `notifications` — append-only log (future)
-One row per notification fired. Written server-side only.
+**Note:** in practice `status` is only `active` / `cancelled` now. The cron never sets
+`triggered` — openings live in the `notifications` table, and `/my-alerts` "Needs
+Attention" is driven by un-dismissed notifications, not alert status. `POST /api/alerts`
+returns the new `alertId` (used by the test-email button + deep links).
+
+### `notifications` — the dedup ledger (live)
+One row per distinct opening the cron has emailed about. Written by the service-role
+cron/sender; users can read + dismiss their own (RLS).
+
+**Schema (v2 — migration `20260623150000_notifications_v2.sql`):**
+```
+id               uuid primary key
+alert_id         uuid not null → alerts (cascade delete)
+user_id          uuid not null   -- denormalized for cheap dashboard queries
+facility_id      text not null → cabins (cascade delete)
+found_date_from  date not null   -- the opening found (may differ from alert range when flexible)
+found_date_to    date not null
+email_to         text not null
+type             text default 'email'   -- delivery channel
+status           text default 'sent'    -- 'sent' | 'failed'
+dismissed_at     timestamptz nullable   -- visibility only; does NOT affect dedup
+sent_at          timestamptz default now()
+unique (alert_id, found_date_from, found_date_to)   -- cron inserts ON CONFLICT DO NOTHING
+```
+- **Dedup is per-opening:** a re-seen opening (even a dismissed one) never re-sends.
+- `dismiss` via `PATCH /api/notifications/[id] { dismissed: true }`.
+- We persist **openings**, never raw availability (rec.gov stays the live source of truth).
 
 ---
 
@@ -137,6 +162,55 @@ RIDB bulk dump (CSV)
 Availability is **never stored** — always a live call to the rec.gov availability endpoint:
 `/api/camps/availability/campground/{facilityId}/month?start_date=...`
 Proxied server-side via `app/api/availability/route.ts` (avoids CORS, caches 5 min).
+
+---
+
+## Notifications & email pipeline
+
+When a watched cabin opens up, the user gets an email. Built around the `notifications`
+ledger. Full design in `docs/notifications-architecture.md`.
+
+```
+Vercel Cron (daily — vercel.json)  →  GET /api/cron/check-alerts  (CRON_SECRET-guarded)
+  → checkAlerts(liveDeps)            lib/notifications/check.ts
+      active cancellation alerts; ONE rec.gov fetch per facility (batched);
+      strict = exact range available · flexible = every bookable run within ±7 days
+  → sendOpeningNotification(...)     lib/notifications/send.ts
+      claim row ON CONFLICT DO NOTHING → render React Email → Resend → email
+```
+
+- **Availability matching** is in `lib/availability.ts`, shared by the booking panel and
+  the cron (one source of truth). Bookability = rec.gov `availabilities` status ===
+  `"Available"` — NOT the parallel `quantities` (stays `1` even when `"Closed"`).
+  `"Closed"` counts as watchable (→ cancellation alert); missing/NYR → not-open.
+- **Email template**: `emails/availability-alert.tsx` (React Email + Resend), brand colors
+  inline, wordmark = `public/email/logo.png` (image; clients ignore webfonts). Preview
+  gallery at `/emails`. Buttons deep-link to `/my-alerts?alert=<id>`.
+- **Service-role client**: `lib/supabase/service.ts` (bypasses RLS, resolves emails via the
+  auth admin API) for the cron + triggers.
+- **On-demand triggers** (skip the checker, send instantly):
+  - `POST /api/dev/trigger-alert { alertId }` — self-serve, caller's own alert. Powers the
+    "Trigger test email" button on the confirmation view.
+  - `POST /api/admin/trigger-alert { alertId, email? }` — admin-only (`EMBER_ADMIN_EMAIL`),
+    any alert. Operator bookmarklet documented in `docs/admin-bookmarklet.md`.
+- **Dev mock**: `EMBER_MOCK_AVAILABILITY` short-circuits the rec.gov fetch with synthetic
+  availability so the full pipeline runs without a real cancellation (`1`/`all` = every
+  night available; a comma-separated `YYYY-MM-DD` list = only those dates).
+- **Reminders are parked** — the cron processes `type='cancellation'` only.
+
+### Env vars (this feature)
+| Key | Purpose |
+|---|---|
+| `RESEND_API_KEY` | Resend auth (required for any send) |
+| `EMBER_FROM_EMAIL` | sender (defaults to `onboarding@resend.dev` in dev) |
+| `CRON_SECRET` | guards the cron route in prod (Vercel sets the Bearer header); route is open in dev |
+| `EMBER_ADMIN_EMAIL` | gates `/api/admin/trigger-alert` |
+| `EMBER_MOCK_AVAILABILITY` | dev synthetic availability |
+| `NEXT_PUBLIC_SITE_URL` | base for email links + the wordmark image (prod domain; localhost in dev) |
+
+**Prod deploy needs:** set the above in Vercel, and **verify a Resend domain** to email
+addresses other than your own account (the `onboarding@resend.dev` sender only delivers to
+the account owner).
 
 ---
 
@@ -157,8 +231,11 @@ All tokens in `app/theme.css` inside `@theme {}`. Use as Tailwind utilities.
 | `wax-muted` | `#b2afa6` | Secondary labels on cards |
 | `ash` | `#171a17` | Nav scrolled bg, auth pill + dropdown surface |
 | `slate` | `#6d736e` | Muted text/icons on light (wax) surfaces — e.g. nav search bar |
+| `smoke-deep` | `#35444d` | Info toast surface (smoke at 30% brightness) |
 
-`--container-nav-search: 600px` — max-width of the centered nav search bar. (Note: `max-w-*` named utilities require a `--container-*` token in Tailwind v4, **not** `--width-*`, which only powers `w-*`.)
+(The error toast reuses the `destructive` button's Tailwind reds: `bg-red-900/50`, `border-red-500/30`, `text-red-300`.)
+
+Layout tokens: `--container-nav-search: 600px` (centered nav search bar) and `--container-toast: 582px` (toast width) — both power `max-w-*` named utilities, which in Tailwind v4 require a `--container-*` token, **not** `--width-*` (that only powers `w-*`, e.g. `--width-opening-card: 300px` for the min-width of a notification "window" card).
 
 ### Type scale (locked — never use `text-[Xpx]`)
 | Class | Usage |
@@ -195,7 +272,9 @@ All tokens in `app/theme.css` inside `@theme {}`. Use as Tailwind utilities.
 - `calendar-input.tsx` — date range picker. Props: `checkIn`, `checkOut`, `onChange`, `availableDates?`, `fetchedMonths?`, `onMonthChange?`. Root is `w-fit mx-auto`.
 - `date-cell.tsx` — calendar cell primitive. States: `default`, `disabled`, `unavailable`, `day`, `hover`, `selected`, `in-range`. `unavailable` = booked/not-open, clickable with dot indicator. `disabled` = past dates or before selected start, non-interactive.
 - `booking-panel.tsx` — shell for booking flows: `h-[600px]`, `p-9`, title + `flex-1` content + sticky CTA slot.
-- `availability-panel.tsx` — full booking widget. Fetches rec.gov availability, calendar with date states, three CTA states (book / alert / reminder), alert-setup + reminder-setup + confirmed views. Auth-gated: triggers Google OAuth if not signed in, restores view+dates from URL params after redirect.
+- `availability-panel.tsx` — full booking widget. Fetches rec.gov availability, calendar with date states, three CTA states (book / alert / reminder), alert-setup + reminder-setup + confirmed views. Auth-gated: triggers Google OAuth if not signed in, restores view+dates from URL params after redirect. The **confirmed view** (cancellation alerts) has a "Trigger test email" button that fires `POST /api/dev/trigger-alert` and pops a toast.
+- `toast.tsx` — `<Toast intent="info|success|error" title description icon? onDismiss?>`. Position-agnostic visual: deep surface + bright intent icon (success = `ember-range`/`ember`, info = `smoke-deep`/`smoke`, error = destructive-button reds), bold title + regular description, self-dismissing X.
+- `toast-provider.tsx` — `<ToastProvider>` (wraps the app in `app/layout.tsx`) + the `useToast()` hook: `toast({ intent, title, description, icon, duration })`. Renders a portal'd **top-right** stack, auto-dismiss 5s (X closes early), framer-motion slide-in/out. Fire from anywhere.
 - `spinner.tsx` — `<Spinner size={24} />` centered loading indicator.
 - `use-cabin-search.ts` — headless cabin-search hook. Loads cabin list + builds Fuse index **once at module level** (shared singleton across all consumers). Returns `query/setQuery/ready/q/visibleResults/hasMore/handleScroll`. No UI.
 - `search.tsx` — vertical cabin autocomplete (landing `AlertForm`). Consumes `useCabinSearch`. cmdk input + dark dropdown, infinite scroll. Navigates to `/cabin/{id}` in a new tab on select.
@@ -203,6 +282,12 @@ All tokens in `app/theme.css` inside `@theme {}`. Use as Tailwind utilities.
 - `status-bar.tsx` — "● last checked Xs ago" + rec.gov link bar
 - `toggle-options.tsx`, `radio-options.tsx` — form toggle primitives
 - `confirmation-animations.tsx` — success state animations
+
+### `components/alerts/` — the `/my-alerts` dashboard
+- `alert-card.tsx` — a Currently Watching / Past alert (mobile + desktop blocks, collapse/expand, cancel-with-modal). `defaultExpanded` prop; expanding syncs `?alert=<id>` to the URL via `history.replaceState`.
+- `alert-card-list.tsx` — renders cards, wrapping each in an `id="alert-<id>"` anchor; `targetAlertId` makes the deep-linked card start expanded.
+- `notification-card.tsx` — a Needs Attention card: groups un-dismissed openings for one alert into a **swipeable "window" carousel** (responsive `33/50/100%` widths, prev/next arrows that disable at bounds, right-edge fade when a card is cut off, scroll-snap, 300px min-width). Each window: found dates + price + Book + Dismiss.
+- `deep-link-scroll.tsx` — on initial load, scrolls to and briefly ember-glows the `?alert=<id>` card (`.deep-link-flash`).
 
 ### `components/listing/` — page-section components (non-reusable)
 - `cabin-header.tsx` — rec area badge + Fraunces title
@@ -231,6 +316,18 @@ All tokens in `app/theme.css` inside `@theme {}`. Use as Tailwind utilities.
 | `supabase/migrations/` | Schema migration files — applied with `supabase db reset` (local) or `supabase db push` (prod) |
 | `docs/authentication.md` | Full auth architecture doc |
 | `docs/alerts-architecture.md` | Alerts data model + server action design |
+| `docs/notifications-architecture.md` | Cron + email pipeline design (matching, dedup, dev mode) |
+| `docs/admin-bookmarklet.md` | One-click operator "trigger alert" bookmarklet |
+| `lib/availability.ts` | rec.gov fetch + shared availability matcher (used by panel + cron) |
+| `lib/availability-mock.ts` | `EMBER_MOCK_AVAILABILITY` synthetic availability |
+| `lib/notifications/check.ts` | openings checker (`checkAlerts`, `matchAlert`, `liveDeps`) |
+| `lib/notifications/send.ts` | sender (`sendOpeningNotification`, `deliverEmail`, `buildEmailPayload`, `liveSendDeps`) |
+| `lib/notifications/run.ts` | cron orchestration (`runNotifications`, `isCronAuthorized`) |
+| `lib/supabase/service.ts` | service-role client for the cron + triggers |
+| `emails/availability-alert.tsx` | React Email template (Resend) |
+| `app/api/cron/check-alerts/route.ts` | the cron route (`vercel.json` schedules it daily) |
+| `app/api/{dev,admin}/trigger-alert/route.ts` | on-demand send (self-serve / admin) |
+| `app/api/notifications/[id]/route.ts` | dismiss a notification |
 
 ---
 
@@ -245,3 +342,4 @@ All tokens in `app/theme.css` inside `@theme {}`. Use as Tailwind utilities.
 7. shadcn only for: Calendar, Dialog, Popover, Select, Sonner, Form — not installed yet
 8. Delete superseded files immediately — verify with `grep` that zero files import them first
 9. No nested or chained ternaries (`a ? b : c ? d : e`) — ESLint enforces `no-nested-ternary`. Use if/else or a lookup object instead.
+10. Tests: **Vitest** (`npm run test`). Pure lib logic is unit-tested — the availability matcher (`lib/availability.test.ts`), the openings checker, the sender, and the cron orchestration. Add tests alongside new pure functions.
