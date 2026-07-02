@@ -48,7 +48,7 @@ export function AvailabilityAlert({
   return (
     <Html>
       <Head />
-      <Preview>{`${cabinName} is available — these re-book fast.`}</Preview>
+      <Preview>{`${cabinName} is available for your selected dates.`}</Preview>
       <Body style={body}>
         <Container style={container}>
           <Section style={headerBand}>
@@ -71,7 +71,7 @@ export function AvailabilityAlert({
               Manage alert on Ember
             </Button>
 
-            <Text style={urgency}>⚡ These re-book fast. You have minutes, not hours. ⚡</Text>
+            <Text style={urgency}>Openings like this often get re-booked within the day.</Text>
           </Section>
 
           <Section style={footer}>

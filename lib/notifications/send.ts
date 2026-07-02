@@ -52,7 +52,7 @@ function siteUrl(): string {
 export function buildEmailPayload(cabin: CabinInfo, opening: Opening): EmailPayload {
   const cabinName = formatCabinName(cabin.facility_name);
   return {
-    subject: `🏕️ ${cabinName} just opened up`,
+    subject: `${cabinName} opened up for your dates`,
     cabinName,
     dateRange: formatLongDateRange(opening.from, opening.to),
     price: cabin.nightly_rate != null ? formatRate(String(cabin.nightly_rate)) : null,
@@ -71,13 +71,18 @@ export async function deliverEmail(to: string, payload: EmailPayload): Promise<v
   const { render } = await import("@react-email/components");
   const { createElement } = await import("react");
   const { AvailabilityAlert } = await import("@/emails/availability-alert");
-  const html = await render(createElement(AvailabilityAlert, payload));
+  const element = createElement(AvailabilityAlert, payload);
+  const html = await render(element);
+  // Multipart text/plain alongside the HTML. A plain-text part is a transactional
+  // signal to inbox providers (and a graceful fallback for text-only clients).
+  const text = await render(element, { plainText: true });
   const resend = new Resend(process.env.RESEND_API_KEY);
   const { error } = await resend.emails.send({
     from: process.env.EMBER_FROM_EMAIL ?? "Ember <onboarding@resend.dev>",
     to,
     subject: payload.subject,
     html,
+    text,
   });
   if (error) throw new Error(error.message);
 }
