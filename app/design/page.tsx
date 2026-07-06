@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Info, Mail } from "lucide-react";
+import { ArrowLeft, ArrowRight, Info, Mail } from "lucide-react";
 import { Field } from "@/components/ui/field";
 import { TextInput } from "@/components/ui/text-input";
 import { ToggleOptions } from "@/components/ui/toggle-options";
@@ -18,6 +18,7 @@ import StatusBar from "@/components/ui/status-bar";
 import { Search } from "@/components/ui/search";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { IconButton } from "@/components/ui/icon-button";
 import { Modal } from "@/components/ui/modal";
 import { Toast } from "@/components/ui/toast";
 import { useToast } from "@/components/ui/toast-provider";
@@ -101,6 +102,15 @@ function VariantLabel({ children }: { children: React.ReactNode }) {
   return <p className="text-data text-smoke/50 uppercase tracking-widest mb-4">{children}</p>;
 }
 
+// Shared control to preview button sections in their disabled state.
+function DisabledToggle({ on, onToggle }: { on: boolean; onToggle: () => void }) {
+  return (
+    <Button variant="ghost" size="sm" onClick={onToggle}>
+      {on ? "Showing disabled" : "Preview disabled"}
+    </Button>
+  );
+}
+
 export default function DesignPage() {
   const [toggle, setToggle] = useState("email");
   const [radio, setRadio] = useState("immediate");
@@ -108,6 +118,7 @@ export default function DesignPage() {
   const [calOut, setCalOut] = useState<Date | null>(null);
   const [modalVariant, setModalVariant] = useState<"default" | "destructive">("default");
   const [modalOpen, setModalOpen] = useState(false);
+  const [showDisabled, setShowDisabled] = useState(false);
   const { toast } = useToast();
 
   return (
@@ -187,25 +198,35 @@ export default function DesignPage() {
         </div>
       </section>
 
-      {/* Button */}
+      {/* Buttons */}
       <section className="page-container border-b border-wax/10 py-16">
-        <SectionLabel>Button</SectionLabel>
+        <SectionLabel>Buttons</SectionLabel>
+        <div className="mb-8">
+          <DisabledToggle on={showDisabled} onToggle={() => setShowDisabled((v) => !v)} />
+        </div>
         <div className="flex flex-wrap gap-6">
           <div className="flex flex-col items-start gap-3">
             <VariantLabel>primary</VariantLabel>
-            <Button variant="primary">Set an alert</Button>
+            <Button variant="primary" disabled={showDisabled}>Set an alert</Button>
           </div>
           <div className="flex flex-col items-start gap-3">
             <VariantLabel>ghost</VariantLabel>
-            <Button variant="ghost">Keep watching</Button>
+            <Button variant="ghost" disabled={showDisabled}>Keep watching</Button>
           </div>
           <div className="flex flex-col items-start gap-3">
             <VariantLabel>destructive</VariantLabel>
-            <Button variant="destructive">Cancel alert</Button>
+            <Button variant="destructive" disabled={showDisabled}>Cancel alert</Button>
           </div>
           <div className="flex flex-col items-start gap-3">
             <VariantLabel>link</VariantLabel>
-            <Button variant="link">View details</Button>
+            <Button variant="link" disabled={showDisabled}>View details</Button>
+          </div>
+          <div className="flex flex-col items-start gap-3">
+            <VariantLabel>icon · ghost</VariantLabel>
+            <div className="flex gap-2">
+              <IconButton icon={ArrowLeft} label="Previous" disabled={showDisabled} />
+              <IconButton icon={ArrowRight} label="Next" disabled={showDisabled} />
+            </div>
           </div>
         </div>
       </section>

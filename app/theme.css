@@ -51,4 +51,8 @@
   --background-image-page-glow:
     radial-gradient(ellipse at 26% 130%, rgb(212 90 32 / 0.5) 0%, transparent 55%),
     radial-gradient(ellipse at 105% 108%, rgb(212 90 32 / 0.4) 0%, transparent 55%);
+
+  /* Lit activity card (OPEN state): warm ember glow up top fading to evergreen */
+  --background-image-card-open:
+    linear-gradient(to bottom, rgb(73 50 28 / 0.41) 0%, rgb(49 43 28 / 0.71) 27.885%, var(--color-evergreen) 84.615%);
 }
