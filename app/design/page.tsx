@@ -7,6 +7,7 @@ import { TextInput } from "@/components/ui/text-input";
 import { ToggleOptions } from "@/components/ui/toggle-options";
 import { RadioOptions } from "@/components/ui/radio-options";
 import { CalendarInput } from "@/components/ui/calendar-input";
+import { DateField } from "@/components/ui/date-field";
 import {
   DateCell,
   type DateCellState,
@@ -119,6 +120,8 @@ export default function DesignPage() {
   const [modalVariant, setModalVariant] = useState<"default" | "destructive">("default");
   const [modalOpen, setModalOpen] = useState(false);
   const [showDisabled, setShowDisabled] = useState(false);
+  const [dfIn, setDfIn] = useState<Date | null>(null);
+  const [dfOut, setDfOut] = useState<Date | null>(null);
   const { toast } = useToast();
 
   return (
@@ -328,9 +331,9 @@ export default function DesignPage() {
         />
       </section>
 
-      {/* Field + TextInput */}
+      {/* Fields */}
       <section className="page-container border-b border-wax/10 py-16">
-        <SectionLabel>Field + TextInput</SectionLabel>
+        <SectionLabel>Fields</SectionLabel>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <div>
             <VariantLabel>Underline (default)</VariantLabel>
@@ -363,6 +366,21 @@ export default function DesignPage() {
                 />
               </Field>
             </div>
+          </div>
+        </div>
+
+        <div className="mt-8 max-w-sm">
+          <VariantLabel>Date field</VariantLabel>
+          <div className="bg-evergreen rounded-xl p-6">
+            <DateField
+              label="DATES"
+              checkIn={dfIn}
+              checkOut={dfOut}
+              onChange={(i, o) => {
+                setDfIn(i);
+                setDfOut(o);
+              }}
+            />
           </div>
         </div>
       </section>
