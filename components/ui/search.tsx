@@ -15,14 +15,6 @@ export function Search({ onSelect }: { onSelect?: (cabin: Cabin) => void }) {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  let inputBorderClass = "border-b-wax/20 hover:border-b-wax/40";
-  if (query) inputBorderClass = "border-b-ember/50 bg-ember/15";
-  if (open) inputBorderClass = "border-b-ember";
-
-  let inputTextClass = "text-wax/40";
-  if (query) inputTextClass = "text-wax";
-  if (open) inputTextClass = "text-ember placeholder:text-ember/50";
-
   useEffect(() => {
     function onDown(e: MouseEvent) {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
@@ -44,23 +36,20 @@ export function Search({ onSelect }: { onSelect?: (cabin: Cabin) => void }) {
             if (e.key === "Escape") setOpen(false);
           }}
         >
-          <div
-            className={["field-control", inputBorderClass].join(" ")}
-          >
-            {!ready ? (
-              <Loader2 size={16} className="shrink-0 text-smoke animate-spin" />
-            ) : (
-              <SearchIcon
-                size={16}
-                className={`shrink-0 transition-colors ${open || query ? "text-ember" : "text-smoke"}`}
-              />
-            )}
+          <div className="field-control field-control-underline">
+            <span className="field-icon">
+              {!ready ? (
+                <Loader2 size={16} className="animate-spin" />
+              ) : (
+                <SearchIcon size={16} />
+              )}
+            </span>
             <CommandPrimitive.Input
               value={query}
               onValueChange={setQuery}
               onFocus={() => setOpen(true)}
               placeholder="Eg. Lost Horse Cabin"
-              className={`flex-1 min-w-0 bg-transparent outline-none caret-ember text-body transition-colors ${inputTextClass}`}
+              className="field-input"
             />
           </div>
 

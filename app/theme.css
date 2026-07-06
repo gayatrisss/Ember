@@ -18,6 +18,7 @@
   --color-ash: #171a17;          /* Expanded alert card header strip surface */
   --color-slate: #6d736e;        /* Muted text/icons on light (wax) surfaces — e.g. nav search */
   --color-smoke-deep: #35444d;   /* Info toast surface (smoke at 30% brightness) */
+  --color-placeholder: color-mix(in oklch, var(--color-wax) 40%, transparent);  /* Empty field / input placeholder text — single source for all fields */
 
   /* === Typography === */
   --font-display: var(--font-fraunces);

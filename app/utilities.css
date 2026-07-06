@@ -183,7 +183,7 @@
     transition: color 150ms ease;
   }
   .field-input::placeholder {
-    color: color-mix(in oklch, var(--color-wax) 40%, transparent);
+    color: var(--color-placeholder);
   }
   .field-control:focus-within .field-input {
     color: var(--color-ember);
