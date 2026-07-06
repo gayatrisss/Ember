@@ -5,7 +5,8 @@ import Footer from "@/components/landing/footer";
 import StatusBar from "@/components/ui/status-bar";
 import CabinHeader from "@/components/listing/cabin-header";
 import { CabinFacts } from "@/components/listing/cabin-facts";
-import TopoImage from "@/components/listing/topo-image";
+import CabinPhoto from "@/components/listing/cabin-photo";
+import TopoMap from "@/components/ui/topo-map";
 import FieldNotes from "@/components/listing/field-notes";
 import { AvailabilityPanel } from "@/components/ui/availability-panel";
 import type { Cabin, CabinImage } from "@/types/cabin";
@@ -67,9 +68,22 @@ export default async function CabinPage({
                 { label: "Price", value: rate ?? "—" },
               ]}
             />
-            {/* aspect-[3/4] is the mobile fallback; on desktop flex-1 fills the remaining column height */}
-            <div className="aspect-[3/4] lg:aspect-auto lg:flex-1 lg:min-h-0">
-              <TopoImage images={images ?? []} name={cabin.facility_name} />
+            {/* Photo + map read as one unit: no gap, only the outer corners are rounded */}
+            <div className="flex flex-col lg:flex-1 lg:min-h-0">
+              <CabinPhoto
+                images={images ?? []}
+                name={cabin.facility_name}
+                className="rounded-b-none"
+              />
+              {/* 150px on mobile; on desktop flex-1 fills the remaining column height */}
+              <div className="h-[150px] lg:h-auto lg:flex-1 lg:min-h-0">
+                <TopoMap
+                  lat={cabin.latitude}
+                  lng={cabin.longitude}
+                  name={cabin.facility_name}
+                  className="rounded-t-none"
+                />
+              </div>
             </div>
           </div>
 
