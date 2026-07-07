@@ -46,6 +46,8 @@
   --shadow-ember-sm: 0 0 12px rgb(212 90 32 / 0.6);
   --shadow-ember-md: 0 0 24px -8px rgb(212 90 32 / 0.4);
   --shadow-ember-lg: 0 0 120px -20px rgb(212 90 32 / 0.15);
+  /* Map location pin — bright core + soft halo so the dot reads as a glowing ember */
+  --shadow-ember-pin: 0 0 8px rgb(212 90 32 / 0.7), 0 0 22px rgb(212 90 32 / 0.5);
 
   /* === Backgrounds === */
   /* Two ember glows from bottom-left and bottom-right, over an evergreen base */

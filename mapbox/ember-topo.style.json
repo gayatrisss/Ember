@@ -1,0 +1,87 @@
+{
+  "version": 8,
+  "name": "Ember Topo",
+  "metadata": {
+    "ember:note": "Seed for the cabin-page topo map. Mirrors the published style (gayatrisabne05/cmr9oszqd000a01rde29wh768). Tune in Studio; keep this in sync."
+  },
+  "center": [-122.6457, 43.05243],
+  "zoom": 12,
+  "sprite": "mapbox://sprites/mapbox/dark-v11",
+  "glyphs": "mapbox://fonts/mapbox/{fontstack}/{range}.pbf",
+  "sources": {
+    "composite": {
+      "type": "vector",
+      "url": "mapbox://mapbox.mapbox-terrain-v2,mapbox.mapbox-streets-v8"
+    }
+  },
+  "layers": [
+    {
+      "id": "background",
+      "type": "background",
+      "paint": { "background-color": "#1c211c" }
+    },
+    {
+      "id": "hillshade-shadow",
+      "type": "fill",
+      "source": "composite",
+      "source-layer": "hillshade",
+      "filter": ["==", ["get", "class"], "shadow"],
+      "paint": {
+        "fill-color": "#0e100e",
+        "fill-antialias": false,
+        "fill-opacity": ["interpolate", ["linear"], ["get", "level"], 56, 0.05, 78, 0.13, 89, 0.19, 94, 0.24]
+      }
+    },
+    {
+      "id": "hillshade-highlight",
+      "type": "fill",
+      "source": "composite",
+      "source-layer": "hillshade",
+      "filter": ["==", ["get", "class"], "highlight"],
+      "paint": {
+        "fill-color": "#2f3d33",
+        "fill-antialias": false,
+        "fill-opacity": ["interpolate", ["linear"], ["get", "level"], 56, 0.03, 90, 0.08]
+      }
+    },
+    {
+      "id": "water",
+      "type": "fill",
+      "source": "composite",
+      "source-layer": "water",
+      "paint": { "fill-color": "#0a1417" }
+    },
+    {
+      "id": "contour",
+      "type": "line",
+      "source": "composite",
+      "source-layer": "contour",
+      "layout": { "line-join": "round" },
+      "paint": { "line-color": "#33434c", "line-opacity": 0.7, "line-width": 2 }
+    },
+    {
+      "id": "contour-index",
+      "type": "line",
+      "source": "composite",
+      "source-layer": "contour",
+      "filter": ["!=", ["get", "index"], null],
+      "layout": { "line-join": "round" },
+      "paint": { "line-color": "#33434c", "line-opacity": 0.85, "line-width": 2 }
+    },
+    {
+      "id": "road",
+      "type": "line",
+      "source": "composite",
+      "source-layer": "road",
+      "filter": ["match", ["get", "class"],
+        ["motorway", "trunk", "primary", "secondary", "tertiary", "street", "street_limited", "service", "track", "road"],
+        true, false],
+      "layout": { "line-join": "round", "line-cap": "round" },
+      "paint": {
+        "line-color": "#d45a20",
+        "line-opacity": 0.45,
+        "line-width": ["interpolate", ["linear"], ["zoom"], 11, 0.6, 13, 1.4, 16, 2.4]
+      }
+    }
+  ]
+}

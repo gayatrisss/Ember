@@ -1,13 +1,12 @@
 const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
 
-// Placeholder: stock Mapbox dark style. Swap for the Ember editorial topo style
-// (mapbox://styles/<username>/<id>) once it's built + published in Mapbox Studio.
-const STYLE = "mapbox/dark-v11";
+// Ember editorial topo style (built from mapbox/ember-topo.style.json, tuned in Studio).
+const STYLE = "gayatrisabne05/cmr9oszqd000a01rde29wh768";
 
 type StaticMapOptions = {
   lat: number;
   lng: number;
-  /** Higher = more zoomed in. ~12 gives regional terrain context around a cabin. */
+  /** Higher = more zoomed in. 13 shows the local road network + smoother contours; 12 frames a wider area. */
   zoom?: number;
   width?: number;
   height?: number;
@@ -21,7 +20,7 @@ type StaticMapOptions = {
 export function staticTopoMapUrl({
   lat,
   lng,
-  zoom = 12,
+  zoom = 15,
   width = 640,
   height = 400,
 }: StaticMapOptions): string | null {

@@ -47,7 +47,7 @@ export default function TopoMap({ lat, lng, name, className }: TopoMapProps) {
             className="object-cover"
           />
           {/* Centered on the cabin, so the center pin marks it exactly */}
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-ember shadow-ember-sm ring-2 ring-night/50" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-ember shadow-ember-pin ring-2 ring-night/50" />
         </>
       ) : (
         <div className="absolute inset-0 opacity-80">
