@@ -16,6 +16,7 @@ type StaticMapOptions = {
  * Builds a Mapbox Static Images API URL centered on the given coordinates.
  * Because the image is centered on the cabin, the center pixel == the cabin,
  * so a CSS-centered pin overlay lines up exactly. Returns null if no token.
+ * test update
  */
 export function staticTopoMapUrl({
   lat,
