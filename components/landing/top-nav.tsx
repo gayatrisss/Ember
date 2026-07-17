@@ -43,12 +43,12 @@ export default function TopNav({ email, name }: { email: string | null; name: st
                     transition={{ duration: 0.2, ease: transitionEase }}
                     className="flex items-center gap-[60px] mt-4"
                   >
-                    <a
-                      href="#"
+                    <Link
+                      href="/explore"
                       className="text-body text-wax uppercase hover:text-ember transition-colors"
                     >
                       Explore
-                    </a>
+                    </Link>
                     <a
                       href="/my-alerts"
                       className="text-body text-wax uppercase hover:text-ember transition-colors"
