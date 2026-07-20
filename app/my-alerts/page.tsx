@@ -18,6 +18,7 @@ type AlertRow = {
   type: string;
   status: string;
   flexibility: string | null;
+  min_nights: number | null;
   created_at: string;
   cabins: {
     facility_name: string;
@@ -38,6 +39,7 @@ type NotificationRow = {
     date_from: string;
     date_to: string;
     flexibility: string | null;
+    min_nights: number | null;
   } | null;
   cabins: {
     facility_name: string;
@@ -59,6 +61,7 @@ function toCardProps(alert: AlertRow): AlertCardProps {
     imageUrl: image?.url ?? null,
     status: alert.status,
     flexibility: alert.flexibility,
+    minNights: alert.min_nights,
   };
 }
 
@@ -76,6 +79,7 @@ function toNotificationCardProps(rows: NotificationRow[]): NotificationCardProps
     price: cabin?.nightly_rate != null ? formatRate(String(cabin.nightly_rate)) : null,
     watchDates: formatLongDateRange(alert.date_from, alert.date_to),
     flexibility: alert.flexibility,
+    minNights: alert.min_nights,
     lastChecked: "—",
     notifiedAgo: timeAgo(first.sent_at),
     windows: rows.map((r) => ({
@@ -104,7 +108,7 @@ export default async function AlertsPage({
         .from("notifications")
         .select(`
           id, alert_id, found_date_from, found_date_to, sent_at,
-          alerts!inner ( id, facility_id, date_from, date_to, flexibility ),
+          alerts!inner ( id, facility_id, date_from, date_to, flexibility, min_nights ),
           cabins ( facility_name, rec_area_name, nightly_rate )
         `)
         .eq("user_id", user.id)
@@ -118,7 +122,7 @@ export default async function AlertsPage({
     ? await supabase
         .from("alerts")
         .select(`
-          id, facility_id, date_from, date_to, type, status, flexibility, created_at,
+          id, facility_id, date_from, date_to, type, status, flexibility, min_nights, created_at,
           cabins ( facility_name, rec_area_name, cabin_images ( url, is_preview ) )
         `)
         .eq("user_id", user.id)

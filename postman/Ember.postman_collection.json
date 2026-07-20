@@ -1,0 +1,235 @@
+{
+  "info": {
+    "_postman_id": "e4b1f2a0-3c7d-4a9b-9f21-ember00000001",
+    "name": "Ember API (local)",
+    "description": "Ember API routes for local dev.\n\nBASE URL: {{baseUrl}} = http://localhost:3000 (the Next dev app, which reads the LOCAL Supabase stack).\n\nAUTH: authenticated routes use Supabase's SSR cookie session, NOT a bearer token. In Postman, open the app in a logged-in browser, copy the full `Cookie` request header (DevTools > Application > Cookies > http://localhost:3000, or a request whose Host is localhost:3000), and paste it into the `authCookie` collection variable. The authenticated + admin requests send it via a `Cookie` header.\n\nVARIABLES: set `facilityId`, `alertId`, `notificationId`, `cronSecret` once and the requests pick them up.\n\nMIN NIGHTS: `minNights` (camelCase in bodies -> min_nights column) is an integer between 1 and the watch-window length. POST /api/alerts and PATCH /api/alerts/{id} accept it; GET /api/alerts returns min_nights. The cron matcher still branches on `flexibility` — switching it to min_nights is the remaining piece of the rework.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3000" },
+    { "key": "authCookie", "value": "" },
+    { "key": "facilityId", "value": "" },
+    { "key": "alertId", "value": "" },
+    { "key": "notificationId", "value": "" },
+    { "key": "cronSecret", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Public",
+      "item": [
+        {
+          "name": "Search cabins",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/search?q=garnet",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "search"],
+              "query": [{ "key": "q", "value": "garnet" }]
+            },
+            "description": "Cabin-name autocomplete over the cabins table. Returns up to 8: { cabins: [{ id, name, area }] }."
+          }
+        },
+        {
+          "name": "Search RIDB (Recreation.gov)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/search-ridb?q=garnet",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "search-ridb"],
+              "query": [{ "key": "q", "value": "garnet" }]
+            },
+            "description": "Proxies Recreation.gov RIDB facilities + recareas search. Requires RIDB_API_KEY server-side. Returns { facilities, areas } raw."
+          }
+        },
+        {
+          "name": "Availability (one month)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/availability?facilityId={{facilityId}}&month=2026-09",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "availability"],
+              "query": [
+                { "key": "facilityId", "value": "{{facilityId}}" },
+                { "key": "month", "value": "2026-09", "description": "optional YYYY-MM; defaults to current month" }
+              ]
+            },
+            "description": "Live Recreation.gov availability for one facility + month. 400 if facilityId missing, 502 if rec.gov unreachable."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Authenticated (user session cookie)",
+      "item": [
+        {
+          "name": "List my alerts",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Cookie", "value": "{{authCookie}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/alerts",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "alerts"]
+            },
+            "description": "The signed-in user's non-cancelled alerts (now including min_nights), joined with cabin name/area. 401 if not authenticated."
+          }
+        },
+        {
+          "name": "Create alert",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Cookie", "value": "{{authCookie}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"facilityId\": \"{{facilityId}}\",\n  \"type\": \"cancellation\",\n  \"dateFrom\": \"2026-09-16\",\n  \"dateTo\": \"2026-09-18\",\n  \"minNights\": 2,\n  \"notificationMethod\": \"email\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/alerts",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "alerts"]
+            },
+            "description": "Create a cancellation (or reminder) alert.\n\nFields: type (cancellation|reminder), dateFrom/dateTo (YYYY-MM-DD), minNights (integer 1..window length — min consecutive available nights that trigger a cancellation alert), flexibility (strict|flexible — legacy, being replaced by minNights), notifyWhen (1day|1week, reminders), notificationMethod (email|sms).\n\nReturns { ok, email, alertId }. Errors: 400 missing fields / invalid_min_nights, 409 duplicate / overlap."
+          }
+        },
+        {
+          "name": "Update min nights",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Cookie", "value": "{{authCookie}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"minNights\": 3\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/alerts/{{alertId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "alerts", "{{alertId}}"]
+            },
+            "description": "Update the minimum-nights threshold on one of the user's alerts. minNights: integer >= 1 and <= the alert's window length (upper bound enforced by the DB constraint; returns 400 invalid_min_nights otherwise). This same endpoint also accepts { status: \"cancelled\" } to cancel."
+          }
+        },
+        {
+          "name": "Cancel alert",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Cookie", "value": "{{authCookie}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"cancelled\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/alerts/{{alertId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "alerts", "{{alertId}}"]
+            },
+            "description": "Soft-cancel one of the user's alerts. Accepts { status: \"cancelled\" } (and/or { minNights }); status must be \"cancelled\"."
+          }
+        },
+        {
+          "name": "Dismiss notification",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Cookie", "value": "{{authCookie}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"dismissed\": true\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/notifications/{{notificationId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "notifications", "{{notificationId}}"]
+            },
+            "description": "Dismiss a notification (opening) so it leaves 'Needs Attention'. Visibility-only; row stays. Only { dismissed: true } accepted."
+          }
+        },
+        {
+          "name": "Trigger alert email (dev, own alert)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Cookie", "value": "{{authCookie}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"alertId\": \"{{alertId}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/dev/trigger-alert",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "dev", "trigger-alert"]
+            },
+            "description": "Force-send the availability email for YOUR alert immediately (skips the checker + rec.gov). Does not write a notifications row. Returns { ok, email, dateRange }."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin (session email == EMBER_ADMIN_EMAIL)",
+      "item": [
+        {
+          "name": "Trigger alert email (admin, any alert)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Cookie", "value": "{{authCookie}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"alertId\": \"{{alertId}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/trigger-alert",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "trigger-alert"]
+            },
+            "description": "Operator tool: force-send for ANY alert to its owner (or add \"email\": \"override@x.com\" to the body). 403 unless the session email equals EMBER_ADMIN_EMAIL. Returns { ok, email, dateRange, alertId }."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Cron (bearer secret)",
+      "item": [
+        {
+          "name": "Check alerts",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{cronSecret}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/api/cron/check-alerts",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cron", "check-alerts"]
+            },
+            "description": "Polls rec.gov for all active cancellation alerts and emails matches. Requires Authorization: Bearer <CRON_SECRET> in prod; in non-prod it is allowed without the header when CRON_SECRET is unset. Returns { ok, openings, sent, duplicate, failed }."
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -22,6 +22,7 @@ export type NotificationCardProps = {
   price: string | null; // "$50/night" or null
   watchDates: string; // the alert's watched range, "July 1st-31st"
   flexibility: string | null;
+  minNights: number | null;
   lastChecked: string; // we don't track this yet -> "—"
   notifiedAgo: string; // most recent opening, "4 hrs ago"
   windows: OpeningWindow[];
@@ -39,6 +40,7 @@ export function NotificationCard({
   price,
   watchDates,
   flexibility,
+  minNights,
   lastChecked,
   notifiedAgo,
   windows,
@@ -213,7 +215,14 @@ export function NotificationCard({
                 <div className="pt-8 flex flex-col gap-8">
                   <div className="flex flex-col gap-2">
                     <SettingRow label="Dates Watching" value={watchDates} />
-                    <SettingRow label="Date Flexibility" value={flexLabel} />
+                    {minNights != null ? (
+                      <SettingRow
+                        label="Minimum Stay"
+                        value={`${minNights} ${minNights === 1 ? "night" : "nights"}`}
+                      />
+                    ) : (
+                      <SettingRow label="Date Flexibility" value={flexLabel} />
+                    )}
                     <SettingRow label="Notify Me Via" value="Email" />
                   </div>
                   <a

@@ -42,7 +42,7 @@ describe("formatLongDateRange", () => {
 describe("buildEmailPayload", () => {
   it("maps a cabin + opening to email props", () => {
     const payload = buildEmailPayload(cabin, opening);
-    expect(payload.subject).toBe("🏕️ Maxey Cabin just opened up");
+    expect(payload.subject).toBe("Maxey Cabin opened up for your dates");
     expect(payload.cabinName).toBe("Maxey Cabin");
     expect(payload.dateRange).toBe("July 9th-12th");
     expect(payload.price).toBe("$50/night");

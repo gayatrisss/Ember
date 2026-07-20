@@ -23,6 +23,7 @@ import { IconButton } from "@/components/ui/icon-button";
 import { Modal } from "@/components/ui/modal";
 import { Toast } from "@/components/ui/toast";
 import { useToast } from "@/components/ui/toast-provider";
+import { Select, type SelectOption } from "@/components/ui/select";
 
 const DATE_CELL_STATES: { label: string; state: DateCellState; position: DateCellPosition }[] = [
   { label: "Default", state: "default", position: "single" },
@@ -95,6 +96,14 @@ const SHADOWS = [
   { cls: "shadow-ember-lg", label: "shadow-ember-lg", usage: "Page ambient glow" },
 ];
 
+const SELECT_OPTIONS: SelectOption[] = [
+  { value: "1", label: "1 night" },
+  { value: "2", label: "2 nights" },
+  { value: "3", label: "3 nights" },
+  { value: "4", label: "4 nights" },
+  { value: "5", label: "5 nights" },
+];
+
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return <p className="text-data text-smoke uppercase tracking-widest mb-8">{children}</p>;
 }
@@ -122,6 +131,7 @@ export default function DesignPage() {
   const [showDisabled, setShowDisabled] = useState(false);
   const [dfIn, setDfIn] = useState<Date | null>(null);
   const [dfOut, setDfOut] = useState<Date | null>(null);
+  const [selectValue, setSelectValue] = useState("2");
   const { toast } = useToast();
 
   return (
@@ -401,6 +411,28 @@ export default function DesignPage() {
             />
             <p className="text-data text-smoke mt-5">
               Selected: <span className="text-ember">{toggle}</span>
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* Select */}
+      <section className="page-container border-b border-wax/10 py-16">
+        <SectionLabel>Select</SectionLabel>
+        <div className="max-w-md">
+          <div className="bg-evergreen rounded-xl p-6">
+            <div className="flex flex-wrap items-center gap-2 text-body text-wax">
+              <span>Alert me when at least</span>
+              <Select
+                value={selectValue}
+                onChange={setSelectValue}
+                options={SELECT_OPTIONS}
+                ariaLabel="Minimum nights"
+              />
+              <span>{selectValue === "1" ? "opens" : "open"} up in your date range.</span>
+            </div>
+            <p className="text-data text-smoke mt-5">
+              Selected: <span className="text-ember">{selectValue}</span>
             </p>
           </div>
         </div>

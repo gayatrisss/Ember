@@ -28,6 +28,9 @@ export type CancellationAlert = {
   facility_id: string;
   date_from: string; // "YYYY-MM-DD"
   date_to: string; // "YYYY-MM-DD" (checkout, exclusive)
+  // Minimum consecutive available nights that should trigger the alert. This is
+  // the current model; `flexibility` is the legacy fallback for older rows.
+  min_nights: number | null;
   flexibility: "strict" | "flexible" | null;
 };
 
@@ -60,30 +63,47 @@ function addDays(date: Date, n: number): Date {
   return r;
 }
 
+// Nights between two "YYYY-MM-DD" dates (checkout exclusive): 07-04 → 07-06 = 2.
+function nightsBetween(fromStr: string, toStr: string): number {
+  return Math.round((parseDate(toStr).getTime() - parseDate(fromStr).getTime()) / 86_400_000);
+}
+
 // The "YYYY-MM" month keys an alert needs fetched. Flexible alerts pad the window ±7
 // days (which can pull in an adjacent month), so the matcher has the full range.
 export function monthsForAlert(alert: CancellationAlert): string[] {
   const from = parseDate(alert.date_from);
   const to = parseDate(alert.date_to);
-  if (alert.flexibility === "flexible") {
+  // The min_nights model watches the exact window (no padding). Only legacy
+  // flexible rows (without min_nights) pad ±7, which can pull in an adjacent month.
+  if (alert.min_nights == null && alert.flexibility === "flexible") {
     return getMonthKeys(addDays(from, -FLEX_PAD_DAYS), addDays(to, FLEX_PAD_DAYS));
   }
   return getMonthKeys(from, to);
 }
 
 // The openings for a single alert against a facility's merged availability.
-//   strict   -> the exact [date_from, date_to) range is available, or nothing
-//   flexible -> every bookable run within [date_from-7, date_to+7]
+//   min_nights -> every bookable run of >= min_nights consecutive nights within
+//                 the exact [date_from, date_to) window (the current model;
+//                 min_nights == window length reproduces the old "strict")
+//   flexible   -> LEGACY (rows without min_nights): every bookable run within
+//                 [date_from-7, date_to+7]
+//   strict     -> LEGACY: the exact [date_from, date_to) range is available, or nothing
 export function matchAlert(
   alert: CancellationAlert,
   merged: Record<string, CampsiteData>
 ): AvailableWindow[] {
   const from = parseDate(alert.date_from);
   const to = parseDate(alert.date_to);
+
+  if (alert.min_nights != null) {
+    const min = alert.min_nights;
+    return findAvailableWindows(merged, from, to).filter((w) => nightsBetween(w.from, w.to) >= min);
+  }
+
+  // Legacy fallback for rows created before min_nights existed.
   if (alert.flexibility === "flexible") {
     return findAvailableWindows(merged, addDays(from, -FLEX_PAD_DAYS), addDays(to, FLEX_PAD_DAYS));
   }
-  // strict (default): only the exact requested range counts.
   if (parseStatus(merged, from, to) === "available") {
     return [{ from: alert.date_from, to: alert.date_to }];
   }
@@ -158,7 +178,7 @@ export function liveDeps(supabase: SupabaseClient): CheckDeps {
     loadActiveAlerts: async () => {
       const { data, error } = await supabase
         .from("alerts")
-        .select("id, user_id, facility_id, date_from, date_to, flexibility")
+        .select("id, user_id, facility_id, date_from, date_to, min_nights, flexibility")
         .eq("status", "active")
         .eq("type", "cancellation");
       if (error) {

@@ -15,7 +15,7 @@ export async function GET() {
   const { data, error } = await supabase
     .from("alerts")
     .select(`
-      id, facility_id, date_from, date_to, type, status, flexibility, created_at,
+      id, facility_id, date_from, date_to, type, status, flexibility, min_nights, created_at,
       cabins ( facility_name, rec_area_name )
     `)
     .eq("user_id", user.id)
@@ -42,10 +42,23 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json();
-  const { facilityId, type, dateFrom, dateTo, flexibility, notifyWhen, notificationMethod } = body;
+  const { facilityId, type, dateFrom, dateTo, flexibility, minNights, notifyWhen, notificationMethod } =
+    body;
 
   if (!facilityId || !type || !dateFrom || !dateTo) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+  }
+
+  // min_nights is the minimum consecutive available nights that should trigger a
+  // cancellation alert. It must be within the watch window (also enforced by the
+  // alerts_min_nights_valid DB constraint). Nights = date_to - date_from.
+  const windowNights = Math.round(
+    (new Date(dateTo).getTime() - new Date(dateFrom).getTime()) / 86_400_000
+  );
+  if (minNights != null) {
+    if (!Number.isInteger(minNights) || minNights < 1 || minNights > windowNights) {
+      return NextResponse.json({ error: "invalid_min_nights" }, { status: 400 });
+    }
   }
 
   const { data, error } = await supabase
@@ -57,6 +70,7 @@ export async function POST(req: NextRequest) {
       date_from: dateFrom,
       date_to: dateTo,
       flexibility: flexibility ?? null,
+      min_nights: minNights ?? null,
       notify_when: notifyWhen ?? null,
       notification_method: notificationMethod ?? "email",
     })
@@ -70,6 +84,9 @@ export async function POST(req: NextRequest) {
     }
     if (error.code === "23P01") {
       return NextResponse.json({ error: "overlap" }, { status: 409 });
+    }
+    if (error.code === "23514") {
+      return NextResponse.json({ error: "invalid_min_nights" }, { status: 400 });
     }
     return NextResponse.json({ error: "unknown" }, { status: 500 });
   }

@@ -24,6 +24,7 @@ const alert = (over: Partial<CancellationAlert>): CancellationAlert => ({
   facility_id: "F1",
   date_from: "2026-07-04",
   date_to: "2026-07-06",
+  min_nights: null,
   flexibility: "strict",
   ...over,
 });
@@ -58,6 +59,14 @@ describe("monthsForAlert", () => {
   it("treats null flexibility as strict", () => {
     expect(monthsForAlert(alert({ flexibility: null }))).toEqual(["2026-07"]);
   });
+
+  it("min_nights: no padding — just the months the window touches (even if flexibility is set)", () => {
+    expect(
+      monthsForAlert(
+        alert({ date_from: "2026-07-04", date_to: "2026-07-06", min_nights: 2, flexibility: "flexible" })
+      )
+    ).toEqual(["2026-07"]);
+  });
 });
 
 describe("matchAlert", () => {
@@ -81,6 +90,37 @@ describe("matchAlert", () => {
       { from: "2026-07-05", to: "2026-07-07" },
       { from: "2026-07-12", to: "2026-07-14" },
     ]);
+  });
+
+  it("min_nights=1: alerts on any open run in the exact window", () => {
+    const a = alert({ date_from: "2026-07-04", date_to: "2026-07-10", min_nights: 1, flexibility: null });
+    // Jul 5 (1 night) and Jul 7-8 (2 nights) open
+    const windows = matchAlert(a, merged([2026, 7, 5], [2026, 7, 7], [2026, 7, 8]));
+    expect(windows).toEqual([
+      { from: "2026-07-05", to: "2026-07-06" },
+      { from: "2026-07-07", to: "2026-07-09" },
+    ]);
+  });
+
+  it("min_nights=2: ignores runs shorter than 2 nights", () => {
+    const a = alert({ date_from: "2026-07-04", date_to: "2026-07-10", min_nights: 2, flexibility: null });
+    const windows = matchAlert(a, merged([2026, 7, 5], [2026, 7, 7], [2026, 7, 8]));
+    expect(windows).toEqual([{ from: "2026-07-07", to: "2026-07-09" }]);
+  });
+
+  it("min_nights == window length reproduces strict", () => {
+    const a = alert({ date_from: "2026-07-04", date_to: "2026-07-06", min_nights: 2, flexibility: null });
+    expect(matchAlert(a, merged([2026, 7, 4], [2026, 7, 5]))).toEqual([
+      { from: "2026-07-04", to: "2026-07-06" },
+    ]);
+    expect(matchAlert(a, merged([2026, 7, 4]))).toEqual([]); // Jul 5 missing
+  });
+
+  it("min_nights takes precedence over flexibility (no ±7 padding)", () => {
+    const a = alert({ date_from: "2026-07-08", date_to: "2026-07-10", min_nights: 1, flexibility: "flexible" });
+    // Jul 5 is outside the exact window (Jul 8-9), so only Jul 9 counts
+    const windows = matchAlert(a, merged([2026, 7, 5], [2026, 7, 9]));
+    expect(windows).toEqual([{ from: "2026-07-09", to: "2026-07-10" }]);
   });
 });
 

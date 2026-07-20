@@ -5,6 +5,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { BookingPanel } from "@/components/ui/booking-panel";
 import { CalendarInput } from "@/components/ui/calendar-input";
 import { ToggleOptions } from "@/components/ui/toggle-options";
+import { Select } from "@/components/ui/select";
 import { Spinner } from "@/components/ui/spinner";
 import { Info, Send } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
@@ -223,7 +224,9 @@ export function AvailabilityPanel({
     error: false,
     status: null,
   });
-  const [flexibility, setFlexibility] = useState("strict");
+  // null = "not yet touched"; the control defaults to the whole window (see
+  // effectiveMinNights below), which reproduces the old "strict" behavior.
+  const [minNights, setMinNights] = useState<number | null>(null);
   const [notifyWhen, setNotifyWhen] = useState("1week");
   const [confirmedEmail, setConfirmedEmail] = useState<string | null>(null);
   const [confirmedAlertId, setConfirmedAlertId] = useState<string | null>(null);
@@ -262,13 +265,16 @@ export function AvailabilityPanel({
     setSubmitError(null);
     setSubmitting(true);
 
-    const payload: Record<string, string> = {
+    const payload: Record<string, string | number> = {
       facilityId,
       type,
       dateFrom: toDateStr(checkIn),
       dateTo: toDateStr(checkOut),
     };
-    if (type === "cancellation") payload.flexibility = flexibility;
+    if (type === "cancellation") {
+      const windowNights = Math.round((checkOut.getTime() - checkIn.getTime()) / 86_400_000);
+      payload.minNights = minNights ?? windowNights;
+    }
     if (type === "reminder") payload.notifyWhen = notifyWhen;
 
     try {
@@ -423,6 +429,15 @@ export function AvailabilityPanel({
   };
 
   const dateRange = fmtRange(checkIn, checkOut);
+  const windowNights =
+    checkIn && checkOut ? Math.round((checkOut.getTime() - checkIn.getTime()) / 86_400_000) : 0;
+  // Default the minimum to the whole window (strict-equivalent); clamp any prior
+  // pick to the current window so it can never exceed it.
+  const effectiveMinNights = Math.min(minNights ?? windowNights, Math.max(windowNights, 1));
+  const nightsOptions = Array.from({ length: Math.max(windowNights, 1) }, (_, i) => ({
+    value: String(i + 1),
+    label: `${i + 1} ${i === 0 ? "night" : "nights"}`,
+  }));
   let title: string;
   let body: React.ReactNode;
   let cta: React.ReactNode;
@@ -441,16 +456,15 @@ export function AvailabilityPanel({
           cabinName={cabinName}
           dateRange={dateRange}
           firstToggle={
-            <div>
-              <p className="text-label text-wax/60 mb-3">Are you flexible with dates at all?</p>
-              <ToggleOptions
-                options={[
-                  { label: "Strict", value: "strict" },
-                  { label: "± 7 Days", value: "flexible" },
-                ]}
-                value={flexibility}
-                onChange={setFlexibility}
+            <div className="flex flex-wrap items-center gap-2 text-body text-wax">
+              <span>Alert me when at least</span>
+              <Select
+                value={String(effectiveMinNights)}
+                options={nightsOptions}
+                onChange={(v) => setMinNights(Number(v))}
+                ariaLabel="Minimum nights"
               />
+              <span>{effectiveMinNights === 1 ? "opens" : "open"} up in your date range.</span>
             </div>
           }
           disclaimer="We'll monitor Recreation.gov around the clock and let you know when a cancellation occurs."

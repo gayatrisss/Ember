@@ -16,21 +16,44 @@ export async function PATCH(
   }
 
   const { id } = await params;
-  const body = await req.json();
-  const { status } = body;
+  const body = await req.json().catch(() => ({}));
+  const { status, minNights } = body;
 
-  if (status !== "cancelled") {
-    return NextResponse.json({ error: "invalid_status" }, { status: 400 });
+  // Partial update: cancel the alert and/or change its minimum-nights threshold.
+  const update: Record<string, unknown> = {};
+
+  if (status !== undefined) {
+    if (status !== "cancelled") {
+      return NextResponse.json({ error: "invalid_status" }, { status: 400 });
+    }
+    update.status = "cancelled";
+  }
+
+  if (minNights !== undefined) {
+    // Lower bound checked here for a clean error; the upper bound (<= window
+    // length) is enforced by the alerts_min_nights_valid DB constraint since the
+    // window dates aren't in this request body.
+    if (!Number.isInteger(minNights) || minNights < 1) {
+      return NextResponse.json({ error: "invalid_min_nights" }, { status: 400 });
+    }
+    update.min_nights = minNights;
+  }
+
+  if (Object.keys(update).length === 0) {
+    return NextResponse.json({ error: "no_fields" }, { status: 400 });
   }
 
   const { error } = await supabase
     .from("alerts")
-    .update({ status: "cancelled" })
+    .update(update)
     .eq("id", id)
     .eq("user_id", user.id);
 
   if (error) {
-    console.log("[ember] PATCH /api/alerts/[id] error", error.message);
+    console.log("[ember] PATCH /api/alerts/[id] error", error.code, error.message);
+    if (error.code === "23514") {
+      return NextResponse.json({ error: "invalid_min_nights" }, { status: 400 });
+    }
     return NextResponse.json({ error: "unknown" }, { status: 500 });
   }
 

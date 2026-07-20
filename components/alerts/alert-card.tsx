@@ -20,6 +20,7 @@ export type AlertCardProps = {
   imageUrl: string | null;
   status: string;
   flexibility: string | null;
+  minNights: number | null;
 };
 
 type CancelState = "idle" | "loading" | "cancelled" | "fading";
@@ -36,6 +37,7 @@ export function AlertCard({
   imageUrl,
   status,
   flexibility,
+  minNights,
   defaultExpanded = false,
 }: AlertCardProps & { defaultExpanded?: boolean }) {
   const router = useRouter();
@@ -94,7 +96,14 @@ export function AlertCard({
   const settingsRows = (
     <div className="flex flex-col gap-2">
       <SettingRow label="Dates Watching" value={dateRange} />
-      <SettingRow label="Date Flexibility" value={flexLabel} />
+      {minNights != null ? (
+        <SettingRow
+          label="Minimum Stay"
+          value={`${minNights} ${minNights === 1 ? "night" : "nights"}`}
+        />
+      ) : (
+        <SettingRow label="Date Flexibility" value={flexLabel} />
+      )}
       <SettingRow label="Notify Me Via" value="Email" />
     </div>
   );
