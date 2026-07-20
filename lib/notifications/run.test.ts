@@ -31,7 +31,7 @@ describe("runNotifications", () => {
     facility_id: "F1",
     date_from: "2026-07-04",
     date_to: "2026-07-06",
-    flexibility: "strict",
+    min_nights: null,
   });
 
   const cabin: CabinInfo = {

@@ -19,7 +19,6 @@ export type AlertCardProps = {
   dateTo: string;
   imageUrl: string | null;
   status: string;
-  flexibility: string | null;
   minNights: number | null;
 };
 
@@ -36,7 +35,6 @@ export function AlertCard({
   dateTo,
   imageUrl,
   status,
-  flexibility,
   minNights,
   defaultExpanded = false,
 }: AlertCardProps & { defaultExpanded?: boolean }) {
@@ -72,7 +70,6 @@ export function AlertCard({
   const badgeType = badgeTypeMap[displayStatus] ?? "default";
   const badgeLabel = badgeLabelMap[displayStatus] ?? displayStatus;
   const dateRange = formatDateRange(dateFrom, dateTo);
-  const flexLabel = flexibility === "flexible" ? "± 7 days" : "Strict";
 
   async function handleCancel() {
     setCancelState("loading");
@@ -96,13 +93,11 @@ export function AlertCard({
   const settingsRows = (
     <div className="flex flex-col gap-2">
       <SettingRow label="Dates Watching" value={dateRange} />
-      {minNights != null ? (
+      {minNights != null && (
         <SettingRow
           label="Minimum Stay"
           value={`${minNights} ${minNights === 1 ? "night" : "nights"}`}
         />
-      ) : (
-        <SettingRow label="Date Flexibility" value={flexLabel} />
       )}
       <SettingRow label="Notify Me Via" value="Email" />
     </div>

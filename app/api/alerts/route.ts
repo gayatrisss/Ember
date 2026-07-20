@@ -15,7 +15,7 @@ export async function GET() {
   const { data, error } = await supabase
     .from("alerts")
     .select(`
-      id, facility_id, date_from, date_to, type, status, flexibility, min_nights, created_at,
+      id, facility_id, date_from, date_to, type, status, min_nights, created_at,
       cabins ( facility_name, rec_area_name )
     `)
     .eq("user_id", user.id)
@@ -42,8 +42,7 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json();
-  const { facilityId, type, dateFrom, dateTo, flexibility, minNights, notifyWhen, notificationMethod } =
-    body;
+  const { facilityId, type, dateFrom, dateTo, minNights, notifyWhen, notificationMethod } = body;
 
   if (!facilityId || !type || !dateFrom || !dateTo) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
@@ -69,7 +68,6 @@ export async function POST(req: NextRequest) {
       type,
       date_from: dateFrom,
       date_to: dateTo,
-      flexibility: flexibility ?? null,
       min_nights: minNights ?? null,
       notify_when: notifyWhen ?? null,
       notification_method: notificationMethod ?? "email",

@@ -21,7 +21,6 @@ export type NotificationCardProps = {
   recAreaName: string | null;
   price: string | null; // "$50/night" or null
   watchDates: string; // the alert's watched range, "July 1st-31st"
-  flexibility: string | null;
   minNights: number | null;
   lastChecked: string; // we don't track this yet -> "—"
   notifiedAgo: string; // most recent opening, "4 hrs ago"
@@ -39,7 +38,6 @@ export function NotificationCard({
   recAreaName,
   price,
   watchDates,
-  flexibility,
   minNights,
   lastChecked,
   notifiedAgo,
@@ -54,8 +52,6 @@ export function NotificationCard({
   const [atStart, setAtStart] = useState(true);
   const [atEnd, setAtEnd] = useState(false);
   const [rightFade, setRightFade] = useState(false);
-
-  const flexLabel = flexibility === "flexible" ? "± 7 days" : "Strict";
 
   // Arrows disable at the bounds; fades show only when a card is actually bisected by an
   // edge (i.e. partly hidden) — not when cards line up flush to the edge.
@@ -215,13 +211,11 @@ export function NotificationCard({
                 <div className="pt-8 flex flex-col gap-8">
                   <div className="flex flex-col gap-2">
                     <SettingRow label="Dates Watching" value={watchDates} />
-                    {minNights != null ? (
+                    {minNights != null && (
                       <SettingRow
                         label="Minimum Stay"
                         value={`${minNights} ${minNights === 1 ? "night" : "nights"}`}
                       />
-                    ) : (
-                      <SettingRow label="Date Flexibility" value={flexLabel} />
                     )}
                     <SettingRow label="Notify Me Via" value="Email" />
                   </div>
