@@ -15,6 +15,18 @@ export const EXPLORE_MAP_STYLE = "mapbox://styles/gayatrisabne05/cmrnyby97000201
 /** Default map view: centered on Montana, matching the published style's framing. */
 export const MONTANA_VIEW = { longitude: -109.6, latitude: 47.0, zoom: 5.6 };
 
+/**
+ * Ember palette hexes mirrored for Mapbox GL paint. GL layers take raw hex, not
+ * CSS/Tailwind tokens, so these named constants stand in for the theme.css tokens
+ * of the same name (keep in sync). Ember is reserved for the selected pin.
+ */
+export const MAP_COLORS = {
+  smoke: "#5f7a8a",
+  wax: "#ede8dc",
+  ember: "#d45a20",
+  night: "#0f1510",
+} as const;
+
 type StaticMapOptions = {
   lat: number;
   lng: number;
