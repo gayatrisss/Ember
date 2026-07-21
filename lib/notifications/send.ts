@@ -31,14 +31,20 @@ export type EmailPayload = {
 
 export type SendResult = {
   sent: boolean;
-  reason?: "duplicate" | "no-cabin" | "send-failed";
+  reason?: "duplicate" | "no-cabin" | "send-failed" | "claim-error";
 };
+
+// Outcome of the dedup claim. "duplicate" means the opening was already notified and
+// must not re-send; "error" means the write itself broke (bad schema, DB down) and the
+// opening is still owed an email. Collapsing the two would silently report real
+// failures as successful dedup.
+export type ClaimOutcome = "claimed" | "duplicate" | "error";
 
 // Injected I/O so the orchestrator is testable without Supabase / Resend.
 export type SendDeps = {
-  // Insert the notification row ON CONFLICT DO NOTHING. Returns true iff this call
-  // inserted it (i.e. we are the one who should send). A conflict returns false.
-  claim: (opening: Opening) => Promise<boolean>;
+  // Insert the notification row ON CONFLICT DO NOTHING. "claimed" iff this call
+  // inserted it (i.e. we are the one who should send).
+  claim: (opening: Opening) => Promise<ClaimOutcome>;
   loadCabin: (facilityId: string) => Promise<CabinInfo | null>;
   deliver: (to: string, payload: EmailPayload) => Promise<void>;
   markFailed: (opening: Opening) => Promise<void>;
@@ -93,8 +99,11 @@ export async function sendOpeningNotification(
   deps: SendDeps,
   opening: Opening
 ): Promise<SendResult> {
-  const claimed = await deps.claim(opening);
-  if (!claimed) return { sent: false, reason: "duplicate" };
+  const claim = await deps.claim(opening);
+  if (claim === "duplicate") return { sent: false, reason: "duplicate" };
+  // The claim row never landed, so there is nothing to mark failed — the opening will
+  // be retried on the next run once the underlying write is fixed.
+  if (claim === "error") return { sent: false, reason: "claim-error" };
 
   const cabin = await deps.loadCabin(opening.facilityId);
   if (!cabin) {
@@ -135,10 +144,17 @@ export function liveSendDeps(supabase: SupabaseClient): SendDeps {
         )
         .select();
       if (error) {
-        console.log("[ember] send: claim failed", opening.alertId, error.message);
-        return false;
+        // Log the PostgREST code/details too — `message` alone doesn't say whether this
+        // is a schema mismatch (PGRST204), an RLS denial, or a connection failure.
+        console.log("[ember] send: claim errored", opening.alertId, {
+          code: error.code,
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+        });
+        return "error";
       }
-      return (data?.length ?? 0) > 0;
+      return (data?.length ?? 0) > 0 ? "claimed" : "duplicate";
     },
     loadCabin: async (facilityId) => {
       const { data, error } = await supabase

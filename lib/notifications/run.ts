@@ -25,7 +25,9 @@ export function isCronAuthorized(
 
 // Finds current openings and sends each, tallying the outcomes. Idempotent across runs
 // because the sender claims the dedup row before sending (a re-seen opening counts as
-// "duplicate" and is not re-sent).
+// "duplicate" and is not re-sent). Only a genuine conflict counts as "duplicate" — a
+// broken claim write lands in "failed", so a summary of all-duplicates always means the
+// openings really had been notified before.
 export async function runNotifications(
   checkDeps: CheckDeps,
   sendDeps: SendDeps

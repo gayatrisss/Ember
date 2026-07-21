@@ -3,6 +3,7 @@ import {
   buildEmailPayload,
   sendOpeningNotification,
   type CabinInfo,
+  type ClaimOutcome,
   type SendDeps,
 } from "@/lib/notifications/send";
 import { formatLongDateRange } from "@/lib/format";
@@ -59,7 +60,7 @@ describe("buildEmailPayload", () => {
 
 describe("sendOpeningNotification", () => {
   const baseDeps = (over: Partial<SendDeps> = {}): SendDeps => ({
-    claim: vi.fn(async () => true),
+    claim: vi.fn(async (): Promise<ClaimOutcome> => "claimed"),
     loadCabin: vi.fn(async () => cabin),
     deliver: vi.fn(async () => {}),
     markFailed: vi.fn(async () => {}),
@@ -78,10 +79,20 @@ describe("sendOpeningNotification", () => {
   });
 
   it("skips (no send) when the opening was already claimed", async () => {
-    const deps = baseDeps({ claim: vi.fn(async () => false) });
+    const deps = baseDeps({ claim: vi.fn(async (): Promise<ClaimOutcome> => "duplicate") });
     const result = await sendOpeningNotification(deps, opening);
     expect(result).toEqual({ sent: false, reason: "duplicate" });
     expect(deps.deliver).not.toHaveBeenCalled();
+  });
+
+  // Regression: a broken claim write used to report as "duplicate", so a run that sent
+  // nothing looked like a run with nothing to send.
+  it("reports claim-error (not duplicate) when the claim write fails", async () => {
+    const deps = baseDeps({ claim: vi.fn(async (): Promise<ClaimOutcome> => "error") });
+    const result = await sendOpeningNotification(deps, opening);
+    expect(result).toEqual({ sent: false, reason: "claim-error" });
+    expect(deps.deliver).not.toHaveBeenCalled();
+    expect(deps.markFailed).not.toHaveBeenCalled();
   });
 
   it("marks failed when the cabin can't be loaded", async () => {

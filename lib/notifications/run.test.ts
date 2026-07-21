@@ -50,7 +50,11 @@ describe("runNotifications", () => {
 
     const sendDeps: SendDeps = {
       // a1 claims (sent), a2 already claimed (duplicate), a3 claims (then delivery fails)
-      claim: vi.fn<SendDeps["claim"]>().mockResolvedValueOnce(true).mockResolvedValueOnce(false).mockResolvedValueOnce(true),
+      claim: vi
+        .fn<SendDeps["claim"]>()
+        .mockResolvedValueOnce("claimed")
+        .mockResolvedValueOnce("duplicate")
+        .mockResolvedValueOnce("claimed"),
       loadCabin: async () => cabin,
       deliver: vi.fn<SendDeps["deliver"]>().mockResolvedValueOnce(undefined).mockRejectedValueOnce(new Error("resend down")),
       markFailed: vi.fn(async () => {}),
@@ -62,6 +66,30 @@ describe("runNotifications", () => {
     expect(sendDeps.markFailed).toHaveBeenCalledOnce(); // only the delivery failure
   });
 
+  // A broken claim write (e.g. the notifications table missing a column) must show up as
+  // failed, not duplicate — otherwise a run that sent nothing reads as a healthy no-op.
+  it("counts claim errors as failed, not duplicate", async () => {
+    const checkDeps: CheckDeps = {
+      loadActiveAlerts: async () => [alert("a1", "U1")],
+      fetchMonth: async () => allAvailableJuly(),
+      getEmail: async (u) => `${u}@example.com`,
+    };
+    const sendDeps: SendDeps = {
+      claim: vi.fn<SendDeps["claim"]>(async () => "error"),
+      loadCabin: async () => cabin,
+      deliver: vi.fn(async () => {}),
+      markFailed: vi.fn(async () => {}),
+    };
+
+    expect(await runNotifications(checkDeps, sendDeps)).toEqual({
+      openings: 1,
+      sent: 0,
+      duplicate: 0,
+      failed: 1,
+    });
+    expect(sendDeps.deliver).not.toHaveBeenCalled();
+  });
+
   it("returns an all-zero summary when there are no openings", async () => {
     const checkDeps: CheckDeps = {
       loadActiveAlerts: async () => [],
@@ -69,7 +97,7 @@ describe("runNotifications", () => {
       getEmail: async () => null,
     };
     const sendDeps: SendDeps = {
-      claim: vi.fn(async () => true),
+      claim: vi.fn<SendDeps["claim"]>(async () => "claimed"),
       loadCabin: async () => cabin,
       deliver: vi.fn(async () => {}),
       markFailed: vi.fn(async () => {}),
