@@ -11,11 +11,14 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Opening } from "@/lib/notifications/check";
 import { formatCabinName, formatRate, formatLongDateRange } from "@/lib/format";
+import { recGovUrl } from "@/lib/recgov";
 
 export type CabinInfo = {
   facility_name: string;
   rec_area_name: string | null;
   nightly_rate: number | null;
+  /** Authoritative, type-aware Recreation.gov URL. See lib/recgov.ts. */
+  reservation_url: string | null;
 };
 
 export type EmailPayload = {
@@ -63,7 +66,7 @@ export function buildEmailPayload(cabin: CabinInfo, opening: Opening): EmailPayl
     dateRange: formatLongDateRange(opening.from, opening.to),
     price: cabin.nightly_rate != null ? formatRate(String(cabin.nightly_rate)) : null,
     location: cabin.rec_area_name ?? null,
-    bookUrl: `https://www.recreation.gov/camping/campgrounds/${opening.facilityId}`,
+    bookUrl: recGovUrl(opening.facilityId, cabin.reservation_url),
     manageUrl: `${siteUrl()}/my-alerts?alert=${opening.alertId}`,
     logoUrl: `${siteUrl()}/email/logo.png`,
   };
@@ -159,7 +162,7 @@ export function liveSendDeps(supabase: SupabaseClient): SendDeps {
     loadCabin: async (facilityId) => {
       const { data, error } = await supabase
         .from("cabins")
-        .select("facility_name, rec_area_name, nightly_rate")
+        .select("facility_name, rec_area_name, nightly_rate, reservation_url")
         .eq("facility_id", facilityId)
         .single();
       if (error) {

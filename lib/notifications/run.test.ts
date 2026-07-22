@@ -38,6 +38,7 @@ describe("runNotifications", () => {
     facility_name: "Maxey Cabin",
     rec_area_name: "Gallatin National Forest",
     nightly_rate: 50,
+    reservation_url: null,
   };
 
   it("tallies sent / duplicate / failed across openings", async () => {

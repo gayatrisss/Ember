@@ -22,6 +22,7 @@ const cabin: CabinInfo = {
   facility_name: "MAXEY CABIN",
   rec_area_name: "Gallatin National Forest",
   nightly_rate: 50,
+  reservation_url: "https://www.recreation.gov/camping/campgrounds/234309",
 };
 
 describe("formatLongDateRange", () => {

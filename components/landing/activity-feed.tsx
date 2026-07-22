@@ -6,13 +6,7 @@ import ActivityCard from "./activity-card";
 import { IconButton } from "@/components/ui/icon-button";
 import type { ActivityItem } from "@/lib/activity";
 
-export default function ActivityFeed({
-  activities,
-  recentCount,
-}: {
-  activities: ActivityItem[];
-  recentCount: number;
-}) {
+export default function ActivityFeed({ activities }: { activities: ActivityItem[] }) {
   const listRef = useRef<HTMLDivElement>(null);
   const [atStart, setAtStart] = useState(true);
   const [atEnd, setAtEnd] = useState(false);
@@ -52,8 +46,10 @@ export default function ActivityFeed({
             <div className="w-3 h-3 rounded-full bg-ember shadow-ember-sm" />
             <span className="text-data text-wax uppercase tracking-wider">LATELY ON EMBER</span>
           </div>
-          <span className="text-data text-wax/50 uppercase tracking-wider">
-            {recentCount} {recentCount === 1 ? "ACTIVITY" : "ACTIVITIES"} IN THE LAST 30 MINUTES
+          {/* The section's one honesty marker: the activity below is illustrative.
+              Kept subtle and stated once here rather than repeated on every card. */}
+          <span className="text-data text-wax/40 uppercase tracking-wider">
+            SAMPLE ACTIVITY · CABINS ARE REAL
           </span>
         </div>
         <div className="flex gap-2">
@@ -79,9 +75,9 @@ export default function ActivityFeed({
         ref={listRef}
         className="mt-8 flex items-stretch gap-6 overflow-x-auto snap-x snap-mandatory no-scrollbar"
       >
-        {activities.map((activity, i) => (
+        {activities.map((activity) => (
           <div
-            key={i}
+            key={activity.id}
             className="snap-start shrink-0 w-full sm:w-[calc(50%-12px)] lg:w-[calc(33.333%-16px)] xl:w-[calc(25%-18px)]"
           >
             <ActivityCard {...activity} />

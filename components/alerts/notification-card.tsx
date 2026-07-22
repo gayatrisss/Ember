@@ -6,6 +6,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { ArrowLeft, ArrowRight, ArrowUpRight, ChevronDown, Trash2, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { formatCabinName } from "@/lib/format";
+import { recGovUrl } from "@/lib/recgov";
 import { Modal } from "@/components/ui/modal";
 
 export type OpeningWindow = {
@@ -25,15 +26,18 @@ export type NotificationCardProps = {
   lastChecked: string; // we don't track this yet -> "—"
   notifiedAgo: string; // most recent opening, "4 hrs ago"
   windows: OpeningWindow[];
+  /** Stored cabins.reservation_url — type-aware, preferred over the derived fallback. */
+  reservationUrl?: string | null;
 };
 
 const expandEase = [0.4, 0, 0.2, 1] as const;
-const bookUrl = (facilityId: string) =>
-  `https://www.recreation.gov/camping/campgrounds/${facilityId}`;
+const bookUrl = (facilityId: string, reservationUrl?: string | null) =>
+  recGovUrl(facilityId, reservationUrl);
 
 export function NotificationCard({
   alertId,
   facilityId,
+  reservationUrl,
   cabinName,
   recAreaName,
   price,
@@ -167,7 +171,12 @@ export function NotificationCard({
                     key={w.notificationId}
                     className="w-full md:w-1/2 lg:w-1/3 shrink-0 min-w-[var(--width-opening-card)] snap-start"
                   >
-                    <NotificationWindow window={w} price={price} facilityId={facilityId} />
+                    <NotificationWindow
+                      window={w}
+                      price={price}
+                      facilityId={facilityId}
+                      reservationUrl={reservationUrl}
+                    />
                   </div>
                 ))}
               </div>
@@ -220,7 +229,7 @@ export function NotificationCard({
                     <SettingRow label="Notify Me Via" value="Email" />
                   </div>
                   <a
-                    href={bookUrl(facilityId)}
+                    href={bookUrl(facilityId, reservationUrl)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center gap-1 text-label text-wax-muted uppercase underline underline-offset-2 hover:opacity-70 transition-opacity"
@@ -267,10 +276,12 @@ function NotificationWindow({
   window,
   price,
   facilityId,
+  reservationUrl,
 }: {
   window: OpeningWindow;
   price: string | null;
   facilityId: string;
+  reservationUrl?: string | null;
 }) {
   const router = useRouter();
   const [dismissing, setDismissing] = useState(false);
@@ -295,7 +306,7 @@ function NotificationWindow({
 
       <div className="flex flex-col gap-2">
         <a
-          href={bookUrl(facilityId)}
+          href={bookUrl(facilityId, reservationUrl)}
           target="_blank"
           rel="noopener noreferrer"
           className="flex items-center justify-center gap-2 bg-ember text-wax text-body px-4 py-3 rounded-lg hover:brightness-110 transition-all"
