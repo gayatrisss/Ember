@@ -2,41 +2,12 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Map, { Source, Layer, Popup } from "react-map-gl/mapbox";
-import type { CircleLayerSpecification, MapLayerMouseEvent } from "mapbox-gl";
+import type { MapLayerMouseEvent } from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
-import { EXPLORE_MAP_STYLE, MAPBOX_ACCESS_TOKEN, MAP_COLORS, MONTANA_VIEW } from "@/lib/mapbox";
+import { EXPLORE_MAP_STYLE, MAPBOX_ACCESS_TOKEN, MONTANA_VIEW } from "@/lib/mapbox";
+import { cabinDotLayer, DOT_LAYER_ID, selectedDotLayer } from "@/lib/map-layers";
 import { ExploreCard } from "@/components/ui/explore-card";
 import type { CabinFeatureCollection, CabinFeatureProps } from "@/lib/cabins";
-
-const DOT_LAYER_ID = "cabin-dots";
-
-/** Gray dots for the ~519 cabins, drawn in one GL circle layer (ember is reserved for the selected pin). */
-const cabinDotLayer: CircleLayerSpecification = {
-  id: DOT_LAYER_ID,
-  type: "circle",
-  source: "cabins",
-  paint: {
-    "circle-radius": 4,
-    "circle-color": MAP_COLORS.smoke,
-    "circle-opacity": 0.9,
-    // Light stroke separates the dots from the warm terrain basemap.
-    "circle-stroke-width": 1.5,
-    "circle-stroke-color": MAP_COLORS.wax,
-  },
-};
-
-/** The selected cabin, redrawn on top in ember. Filtered to one id (none when nothing is selected). */
-const selectedDotLayer: CircleLayerSpecification = {
-  id: "cabin-dot-selected",
-  type: "circle",
-  source: "cabins",
-  paint: {
-    "circle-radius": 7,
-    "circle-color": MAP_COLORS.ember,
-    "circle-stroke-width": 2,
-    "circle-stroke-color": MAP_COLORS.wax,
-  },
-};
 
 /**
  * Full-bleed interactive map for the /explore page. Renders the basemap plus every
