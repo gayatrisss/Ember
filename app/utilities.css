@@ -216,3 +216,29 @@
       var(--shadow-ember-md);
   }
 }
+
+/* === Mapbox popup chrome (/explore cabin card) ===============================
+ *
+ * DELIBERATELY OUTSIDE @layer components. `mapbox-gl.css` ships unlayered, and
+ * unlayered CSS wins over layered CSS no matter the specificity — so these rules
+ * would silently lose if they sat in the block above. Everything here is scoped to
+ * `.ember-popup` (set via the Popup `className`) so other maps keep default chrome.
+ *
+ * The strategy is to strip the popup's own box entirely and let ExploreCard supply
+ * the surface, leaving the popup responsible only for position.
+ */
+.ember-popup .mapboxgl-popup-content {
+  padding: 0;
+  background: transparent;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+/* No tail. A single-colour triangle can only ever meet one edge of the card, and the
+   card's top edge is a photo whose colours change per cabin — so when the popup flipped
+   below the dot the tail read as a detached artifact. Without it the card is a floating
+   panel positioned near its dot, and the ember selected dot carries the association.
+   The Popup `offset` is widened to compensate for the space the tip used to occupy. */
+.ember-popup .mapboxgl-popup-tip {
+  display: none;
+}

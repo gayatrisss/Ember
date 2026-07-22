@@ -11,6 +11,7 @@ import FieldNotes from "@/components/listing/field-notes";
 import { AvailabilityPanel } from "@/components/ui/availability-panel";
 import type { Cabin, CabinImage } from "@/types/cabin";
 import { confident, getCabinType, formatRate, formatAccess } from "@/lib/format";
+import { resolveCapacity } from "@/lib/facts";
 import { fetchInitialMonths } from "@/lib/availability";
 
 type Params = { id: string };
@@ -45,7 +46,7 @@ export default async function CabinPage({
 
   if (!cabin) notFound();
 
-  const sleeps = confident(cabin.sleeps, cabin.sleeps_conf);
+  const capacity = resolveCapacity(cabin);
   const type = getCabinType(cabin.facility_name);
   const rate = formatRate(cabin.nightly_rate);
   const access = confident(cabin.road_access, cabin.road_access_conf);
@@ -53,7 +54,7 @@ export default async function CabinPage({
   return (
     <div className="min-h-screen bg-night flex flex-col">
       <TopNav email={user?.email ?? null} name={user?.user_metadata?.full_name ?? null} />
-      <StatusBar facilityId={id} />
+      <StatusBar facilityId={id} reservationUrl={cabin.reservation_url} />
 
       <main className="flex-1 page-container pt-8 lg:pt-12 pb-page">
         <CabinHeader cabin={cabin} />
@@ -62,7 +63,7 @@ export default async function CabinPage({
           <div className="flex flex-col gap-4">
             <CabinFacts
               facts={[
-                { label: "Sleeps", value: sleeps ? `${sleeps} people` : "—" },
+                { label: capacity?.label ?? "Beds", value: capacity?.value ?? "—" },
                 { label: "Type", value: type },
                 { label: "Access", value: access ? formatAccess(access) : "—" },
                 { label: "Price", value: rate ?? "—" },
@@ -90,6 +91,7 @@ export default async function CabinPage({
           <AvailabilityPanel
             facilityId={id}
             cabinName={cabin.facility_name}
+            reservationUrl={cabin.reservation_url}
             initialMonths={initialMonths}
           />
         </div>
