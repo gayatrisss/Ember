@@ -22,6 +22,7 @@ type AlertRow = {
   cabins: {
     facility_name: string;
     rec_area_name: string | null;
+    reservation_url: string | null;
     cabin_images: CabinImage[];
   } | null;
 };
@@ -43,6 +44,7 @@ type NotificationRow = {
     facility_name: string;
     rec_area_name: string | null;
     nightly_rate: number | null;
+    reservation_url: string | null;
   } | null;
 };
 
@@ -59,6 +61,7 @@ function toCardProps(alert: AlertRow): AlertCardProps {
     imageUrl: image?.url ?? null,
     status: alert.status,
     minNights: alert.min_nights,
+    reservationUrl: alert.cabins?.reservation_url ?? null,
   };
 }
 
@@ -73,6 +76,7 @@ function toNotificationCardProps(rows: NotificationRow[]): NotificationCardProps
     facilityId: alert.facility_id,
     cabinName: cabin?.facility_name ?? alert.facility_id,
     recAreaName: cabin?.rec_area_name ?? null,
+    reservationUrl: cabin?.reservation_url ?? null,
     price: cabin?.nightly_rate != null ? formatRate(String(cabin.nightly_rate)) : null,
     watchDates: formatLongDateRange(alert.date_from, alert.date_to),
     minNights: alert.min_nights,
@@ -105,7 +109,7 @@ export default async function AlertsPage({
         .select(`
           id, alert_id, found_date_from, found_date_to, sent_at,
           alerts!inner ( id, facility_id, date_from, date_to, min_nights ),
-          cabins ( facility_name, rec_area_name, nightly_rate )
+          cabins ( facility_name, rec_area_name, nightly_rate, reservation_url )
         `)
         .eq("user_id", user.id)
         .is("dismissed_at", null)
@@ -119,7 +123,7 @@ export default async function AlertsPage({
         .from("alerts")
         .select(`
           id, facility_id, date_from, date_to, type, status, min_nights, created_at,
-          cabins ( facility_name, rec_area_name, cabin_images ( url, is_preview ) )
+          cabins ( facility_name, rec_area_name, reservation_url, cabin_images ( url, is_preview ) )
         `)
         .eq("user_id", user.id)
         .order("created_at", { ascending: false })

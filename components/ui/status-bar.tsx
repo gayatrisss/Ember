@@ -1,11 +1,13 @@
+import { recGovUrl as buildRecGovUrl } from "@/lib/recgov";
+
 type StatusBarProps = {
   facilityId?: string;
+  /** Stored cabins.reservation_url — type-aware, preferred over the derived fallback. */
+  reservationUrl?: string | null;
 };
 
-export default function StatusBar({ facilityId }: StatusBarProps) {
-  const recGovUrl = facilityId
-    ? `https://www.recreation.gov/camping/campgrounds/${facilityId}`
-    : "#";
+export default function StatusBar({ facilityId, reservationUrl }: StatusBarProps) {
+  const recGovUrl = facilityId ? buildRecGovUrl(facilityId, reservationUrl) : "#";
 
   return (
     <div className="w-full bg-evergreen">

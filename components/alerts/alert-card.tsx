@@ -7,6 +7,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { ArrowUpRight, ChevronDown, Pencil, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { formatCabinName, formatDateRange } from "@/lib/format";
+import { recGovUrl } from "@/lib/recgov";
 import { Modal } from "@/components/ui/modal";
 import { Badge } from "@/components/ui/badge";
 
@@ -20,6 +21,8 @@ export type AlertCardProps = {
   imageUrl: string | null;
   status: string;
   minNights: number | null;
+  /** Stored cabins.reservation_url — type-aware, preferred over the derived fallback. */
+  reservationUrl?: string | null;
 };
 
 type CancelState = "idle" | "loading" | "cancelled" | "fading";
@@ -29,6 +32,7 @@ const expandEase = [0.4, 0, 0.2, 1] as const;
 export function AlertCard({
   alertId,
   facilityId,
+  reservationUrl,
   cabinName,
   recAreaName,
   dateFrom,
@@ -108,7 +112,7 @@ export function AlertCard({
       <div className="flex items-center justify-between">
         <p className="text-label text-wax-muted uppercase">Map</p>
         <a
-          href={`https://www.recreation.gov/camping/campgrounds/${facilityId}`}
+          href={recGovUrl(facilityId, reservationUrl)}
           target="_blank"
           rel="noopener noreferrer"
           className="flex items-center gap-1 hover:opacity-70 transition-opacity"

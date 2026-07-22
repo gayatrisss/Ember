@@ -9,6 +9,7 @@ import { Select } from "@/components/ui/select";
 import { Spinner } from "@/components/ui/spinner";
 import { Info, Send } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { recGovUrl } from "@/lib/recgov";
 import { useToast } from "@/components/ui/toast-provider";
 import {
   monthKey,
@@ -193,10 +194,13 @@ function ConfirmedContent({
 export function AvailabilityPanel({
   facilityId,
   cabinName,
+  reservationUrl,
   initialMonths,
 }: {
   facilityId: string;
   cabinName: string;
+  /** Stored cabins.reservation_url — type-aware, preferred over the derived fallback. */
+  reservationUrl?: string | null;
   // Month cache seeded by the server (keyed "YYYY-MM") covering the panel's
   // initial view, so the first paint has data and skips the loading state.
   initialMonths?: Record<string, unknown>;
@@ -402,7 +406,7 @@ export function AvailabilityPanel({
           <p className="text-label text-wax/60 text-center mb-4">
             These dates are available to book!
           </p>
-          <CtaButton href={`https://www.recreation.gov/camping/campgrounds/${facilityId}`}>
+          <CtaButton href={recGovUrl(facilityId, reservationUrl)}>
             Book on Recreation.gov →
           </CtaButton>
         </>
