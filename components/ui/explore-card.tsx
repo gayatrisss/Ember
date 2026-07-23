@@ -53,20 +53,30 @@ function Fact({ label, value }: { label: string; value: string }) {
   );
 }
 
-/** Grey block standing in for the photo while the detail request is in flight. */
-function Skeleton({ className }: { className: string }) {
-  return <div className={`animate-pulse bg-wax/10 ${className}`} />;
-}
-
 /**
- * Three states, and they must stay distinct: still fetching, fetched with a photo, and
- * fetched with none (a fair number of cabins have no media on rec.gov). Showing the
- * skeleton for the last one would pulse forever.
+ * The photo. Its URL rides on the map point, so there is no "still fetching the URL"
+ * state to cover — the two cases are: a photo (fade it in once its bytes load) or none
+ * (a fair number of cabins have no media on rec.gov → a calm evergreen fill).
+ *
+ * The fade replaces the old pulsing skeleton, which was most of the visible flicker: the
+ * card is remounted per selection (keyed by id), so switching cabins tore the previous
+ * photo out instantly and dropped to an animated grey box. Now the new photo's fetch
+ * begins at mount and eases up over the card's own evergreen when ready.
  */
-function Photo({ card }: { card: CabinCard | null }) {
-  if (!card) return <Skeleton className="h-full w-full" />;
-  if (!card.imageUrl) return <div className="h-full w-full bg-gradient-to-b from-evergreen to-night" />;
-  return <Image src={card.imageUrl} alt={card.name} fill className="object-cover" />;
+function Photo({ imageUrl, name }: { imageUrl: string | null; name: string }) {
+  const [loaded, setLoaded] = useState(false);
+
+  if (!imageUrl) return <div className="h-full w-full bg-gradient-to-b from-evergreen to-night" />;
+
+  return (
+    <Image
+      src={imageUrl}
+      alt={name}
+      fill
+      onLoad={() => setLoaded(true)}
+      className={`object-cover transition-opacity duration-500 ${loaded ? "opacity-100" : "opacity-0"}`}
+    />
+  );
 }
 
 type Props = {
@@ -96,8 +106,8 @@ export function ExploreCard({ seed }: Props) {
           antialiased edge sitting on the popup's composited layer boundary (mapbox sets
           will-change: transform), and the basemap bleeds through it as a light hairline.
           Clipped here, any softness blends into the card's own evergreen instead. */}
-      <div className="relative aspect-[3/2] w-full overflow-hidden rounded-t-lg bg-night">
-        <Photo card={card} />
+      <div className="relative aspect-[3/2] w-full overflow-hidden rounded-t-lg bg-evergreen">
+        <Photo imageUrl={seed.imageUrl} name={seed.name} />
       </div>
 
       <div className="flex flex-col gap-6 p-4">
@@ -123,7 +133,9 @@ export function ExploreCard({ seed }: Props) {
             label={card?.capacity?.label ?? "Beds"}
             value={card?.capacity?.value ?? "—"}
           />
-          <Fact label="Price" value={formatRate(card?.rate ?? null) ?? "—"} />
+          {/* Price rides on the point too, so it paints instantly rather than after the
+              detail request; capacity still waits on the API (num_beds isn't in the payload). */}
+          <Fact label="Price" value={formatRate(seed.rate) ?? "—"} />
         </div>
 
         {/* Sits above the stretched link's ::after so it stays independently clickable.

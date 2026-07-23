@@ -11,6 +11,14 @@ export type CabinFeatureProps = {
   area: string | null;
   sleeps: number | null;
   rate: string | null;
+  /**
+   * Preview photo URL, carried on the point so the card can start fetching it the instant
+   * a dot is selected — instead of waiting on /api/cabins/[id] to even learn the URL. That
+   * serial hop (API, then image) was the /explore card's dominant latency, worst on prod
+   * where the API leg hits hosted Supabase. Same "best image" ordering as fetchCabinCard,
+   * so the photo never changes once the detail request lands.
+   */
+  imageUrl: string | null;
 };
 
 export type CabinFeature = {
@@ -43,9 +51,17 @@ function inBox(lat: number, lng: number): boolean {
  */
 export async function fetchMapCabins(): Promise<CabinFeatureCollection> {
   const supabase = createStaticClient();
+  // Embed the single best image per cabin (limit 1, primary → preview ordering) rather
+  // than a flat join: cabin_images has ~3800 rows, past Supabase's 1000-row default cap,
+  // whereas the 511-cabin parent query stays well under it.
   const { data, error } = await supabase
     .from("cabins")
-    .select("facility_id, facility_name, rec_area_name, latitude, longitude, sleeps, nightly_rate");
+    .select(
+      "facility_id, facility_name, rec_area_name, latitude, longitude, sleeps, nightly_rate, cabin_images(url)"
+    )
+    .order("is_primary", { referencedTable: "cabin_images", ascending: false })
+    .order("is_preview", { referencedTable: "cabin_images", ascending: false })
+    .limit(1, { referencedTable: "cabin_images" });
 
   if (error) {
     console.error("[ember] fetchMapCabins error", error.message);
@@ -57,6 +73,8 @@ export async function fetchMapCabins(): Promise<CabinFeatureCollection> {
     const { latitude: lat, longitude: lng } = row;
     if (typeof lat !== "number" || typeof lng !== "number" || !inBox(lat, lng)) continue;
 
+    const images = row.cabin_images as { url: string }[] | null;
+
     features.push({
       type: "Feature",
       geometry: { type: "Point", coordinates: [lng, lat] },
@@ -66,6 +84,7 @@ export async function fetchMapCabins(): Promise<CabinFeatureCollection> {
         area: row.rec_area_name,
         sleeps: row.sleeps,
         rate: row.nightly_rate,
+        imageUrl: images?.[0]?.url ?? null,
       },
     });
   }
@@ -74,10 +93,11 @@ export async function fetchMapCabins(): Promise<CabinFeatureCollection> {
 }
 
 /**
- * The extra detail the /explore card shows once a dot is selected. The map's GeoJSON
- * deliberately carries only what paints a dot plus a card headline; the photo and the
- * remaining facts are fetched per selection so /explore doesn't ship ~519 rows of
- * detail (and ~519 image URLs) on first load.
+ * The extra detail the /explore card fills in once a dot is selected. The map's GeoJSON
+ * carries what paints a dot, the card headline, AND the preview image URL; only the
+ * facts that need columns absent from the map payload (capacity, access, canonical URL)
+ * are fetched per selection. The photo is deliberately NOT here — it rides on the point
+ * so it can start loading without waiting for this request.
  */
 export type CabinCard = {
   id: string;
@@ -90,7 +110,6 @@ export type CabinCard = {
   type: string;
   access: string | null;
   elevationFt: number | null;
-  imageUrl: string | null;
   /** Canonical Recreation.gov URL — the card's only explicit link. See lib/recgov.ts. */
   recGovUrl: string;
 };
@@ -110,26 +129,21 @@ type CardRow = Pick<
   | "reservation_url"
 >;
 
-/** Loads one cabin's card detail, including its preview photo. Null when the id is unknown. */
+/**
+ * Loads one cabin's card detail. The photo is NOT fetched here — it comes from the map
+ * payload (CabinFeatureProps.imageUrl), so this is a single lightweight row lookup.
+ * Null when the id is unknown.
+ */
 export async function fetchCabinCard(id: string): Promise<CabinCard | null> {
   const supabase = createStaticClient();
 
-  const [{ data: cabin, error }, { data: images }] = await Promise.all([
-    supabase
-      .from("cabins")
-      .select(
-        "facility_id, facility_name, rec_area_name, sleeps, num_beds, nightly_rate, road_access, road_access_conf, elevation_ft, elevation_ft_conf, reservation_url"
-      )
-      .eq("facility_id", id)
-      .maybeSingle<CardRow>(),
-    supabase
-      .from("cabin_images")
-      .select("url")
-      .eq("facility_id", id)
-      .order("is_primary", { ascending: false })
-      .order("is_preview", { ascending: false })
-      .limit(1),
-  ]);
+  const { data: cabin, error } = await supabase
+    .from("cabins")
+    .select(
+      "facility_id, facility_name, rec_area_name, sleeps, num_beds, nightly_rate, road_access, road_access_conf, elevation_ft, elevation_ft_conf, reservation_url"
+    )
+    .eq("facility_id", id)
+    .maybeSingle<CardRow>();
 
   if (error) {
     console.error("[ember] fetchCabinCard error", error.message);
@@ -148,7 +162,6 @@ export async function fetchCabinCard(id: string): Promise<CabinCard | null> {
     type: getCabinType(cabin.facility_name),
     access: access ? formatAccess(access) : null,
     elevationFt: confident(cabin.elevation_ft, cabin.elevation_ft_conf),
-    imageUrl: images?.[0]?.url ?? null,
     recGovUrl: recGovUrl(cabin.facility_id, cabin.reservation_url),
   };
 }
