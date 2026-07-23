@@ -116,35 +116,3 @@ export const selectedDotLayers: CircleLayerSpecification[] = [
     },
   },
 ];
-
-/* ------------------------------------------------------------------------- *
- * Superseded by the arrays above, still mounted by explore-map.tsx. Delete
- * both once that file renders the arrays — see the dots/search split.
- * ------------------------------------------------------------------------- */
-
-/** @deprecated Use {@link cabinDotLayers}. */
-export const cabinDotLayer: CircleLayerSpecification = {
-  id: DOT_LAYER_ID,
-  type: "circle",
-  source: "cabins",
-  paint: {
-    "circle-radius": 4,
-    "circle-color": MAP_COLORS.smoke,
-    "circle-opacity": 0.9,
-    "circle-stroke-width": 1.5,
-    "circle-stroke-color": MAP_COLORS.wax,
-  },
-};
-
-/** @deprecated Use {@link selectedDotLayers}. */
-export const selectedDotLayer: CircleLayerSpecification = {
-  id: "cabin-dot-selected",
-  type: "circle",
-  source: "cabins",
-  paint: {
-    "circle-radius": 7,
-    "circle-color": MAP_COLORS.ember,
-    "circle-stroke-width": 2,
-    "circle-stroke-color": MAP_COLORS.wax,
-  },
-};

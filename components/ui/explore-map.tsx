@@ -7,7 +7,7 @@ import MapGL, { Source, Layer, Popup, type MapRef } from "react-map-gl/mapbox";
 import type { MapLayerMouseEvent } from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { EXPLORE_MAP_STYLE, MAPBOX_ACCESS_TOKEN, MONTANA_VIEW } from "@/lib/mapbox";
-import { cabinDotLayer, DOT_LAYER_ID, selectedDotLayer } from "@/lib/map-layers";
+import { cabinDotLayers, DOT_LAYER_ID, selectedDotLayers } from "@/lib/map-layers";
 import { ExploreCard } from "@/components/ui/explore-card";
 import { ExploreHeader } from "@/components/ui/explore-header";
 import type { Cabin } from "@/components/ui/use-cabin-search";
@@ -158,8 +158,15 @@ export function ExploreMap({ cabins }: { cabins: CabinFeatureCollection }) {
         }}
       >
         <Source id="cabins" type="geojson" data={cabins}>
-          <Layer {...cabinDotLayer} />
-          <Layer {...selectedDotLayer} filter={["==", ["get", "id"], selectedId ?? ""]} />
+          {/* Each dot is three stacked circles (outer band → halo → core); the selected
+              dot is four (glow → band → halo → core), drawn after so it sits on top and
+              filtered to the current id — with no selection the filter matches nothing. */}
+          {cabinDotLayers.map((layer) => (
+            <Layer key={layer.id} {...layer} />
+          ))}
+          {selectedDotLayers.map((layer) => (
+            <Layer key={layer.id} {...layer} filter={["==", ["get", "id"], selectedId ?? ""]} />
+          ))}
         </Source>
 
         {selected && (
