@@ -85,6 +85,19 @@
     -webkit-font-smoothing: antialiased;
   }
 
+  /* Fraunces at 36px — the trimmed /explore chrome, which sits between the 48px nav
+     wordmark and the 24px cabin name. Carries SOFT/WONK like the nav wordmark. */
+  .text-display-fraunces-md {
+    font-family: var(--font-display);
+    font-style: italic;
+    font-weight: 700;
+    font-size: 36px;
+    line-height: 1.2;
+    font-variation-settings: "SOFT" 0, "WONK" 1, "opsz" 96;
+    font-feature-settings: normal;
+    -webkit-font-smoothing: antialiased;
+  }
+
   /* Fraunces at 24px — cabin names, step headlines */
   .text-display-fraunces-sm {
     font-family: var(--font-display);
