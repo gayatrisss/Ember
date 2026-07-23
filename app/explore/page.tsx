@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { ExploreMap } from "@/components/ui/explore-map";
 import { fetchMapCabins } from "@/lib/cabins";
 
@@ -11,7 +12,13 @@ export default async function Explore() {
 
   return (
     <div className="fixed inset-0 bg-night">
-      <ExploreMap cabins={cabins} />
+      {/* ExploreMap reads ?cabin= via useSearchParams. In a prerendered route that
+          suspends, and the production build fails without this boundary — it only
+          appears to work in dev, where routes render on demand. Keeping the boundary
+          here is what lets the page stay ISR instead of going dynamic. */}
+      <Suspense fallback={<div className="h-full w-full bg-night" />}>
+        <ExploreMap cabins={cabins} />
+      </Suspense>
     </div>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Fuse, { type IFuseOptions } from "fuse.js";
 import { createClient } from "@/lib/supabase/client";
 
@@ -44,19 +44,35 @@ function loadFuse(): Promise<Fuse<Cabin>> {
 }
 
 /**
- * Headless cabin search: loads the cabin list once, builds a Fuse index, and
- * exposes paginated fuzzy results. Presentation (input, dropdown, selection
- * behavior) lives in the consumer — see `search.tsx` and `nav-search.tsx`.
+ * Headless cabin search: builds a Fuse index and exposes paginated fuzzy results.
+ * Presentation (input, dropdown, selection behavior) lives in the consumer — see
+ * `search.tsx`, `nav-search.tsx` and `map-search.tsx`.
+ *
+ * Pass `corpus` when the caller already holds the cabin list. /explore loads all 511
+ * cabins server-side as GeoJSON, so letting it index what's in memory avoids fetching
+ * the same rows a second time from the browser — which would undercut the load-once
+ * design the map is built on. Callers without a corpus (nav, landing) fetch as before,
+ * sharing one module-level index between them.
+ *
+ * `corpus` must be referentially stable (memoise it) or the index rebuilds each render.
  */
-export function useCabinSearch() {
+export function useCabinSearch(corpus?: Cabin[]) {
   const [query, setQuery] = useState("");
-  const [fuse, setFuse] = useState<Fuse<Cabin> | null>(null);
+  const [loadedFuse, setLoadedFuse] = useState<Fuse<Cabin> | null>(null);
   // Track { q, count } together so resetting on query change needs no useEffect.
   const [page, setPage] = useState({ q: "", count: PAGE });
 
+  const localFuse = useMemo(
+    () => (corpus ? new Fuse(corpus, FUSE_OPTIONS) : null),
+    [corpus]
+  );
+
   useEffect(() => {
-    loadFuse().then(setFuse);
-  }, []);
+    if (corpus) return; // caller supplied the corpus; nothing to fetch
+    loadFuse().then(setLoadedFuse);
+  }, [corpus]);
+
+  const fuse = localFuse ?? loadedFuse;
 
   const q = query.trim();
   const allResults: Cabin[] = fuse && q.length >= 2 ? fuse.search(q).map((r) => r.item) : [];
