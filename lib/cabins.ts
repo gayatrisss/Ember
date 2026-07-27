@@ -1,16 +1,37 @@
 import { createStaticClient } from "@/lib/supabase/static";
-import { confident, formatAccess, formatCabinName, getCabinType } from "@/lib/format";
-import { resolveCapacity, type Fact } from "@/lib/facts";
+import { formatCabinName, formatRate } from "@/lib/format";
+import { resolveCapacity } from "@/lib/facts";
 import { recGovUrl } from "@/lib/recgov";
-import type { Cabin } from "@/types/cabin";
 
-/** Card-ready primitives carried on each point. GeoJSON properties must be flat (no nested objects). */
+/**
+ * Everything the /explore card renders, carried on each map point — pre-resolved into
+ * flat fields (GeoJSON properties can't nest).
+ *
+ * The card used to fetch its facts per selection from /api/cabins/[id]. But every field
+ * it shows comes from the frozen cabin dump, so there was nothing dynamic to fetch: the
+ * same logic that put coordinates and the photo URL here applies to capacity, price and
+ * the rec.gov link. Loading it all once (a few KB gzipped for the whole set — the URLs
+ * share one prefix and compress away) makes the card instant on selection and deletes
+ * the per-card API route, its hook, and its cache.
+ *
+ * Capacity and the rec.gov URL are resolved server-side (resolveCapacity, recGovUrl) so
+ * that logic — including the "Beds vs Occupancy" subtlety — stays off the client. The
+ * one thing NOT pre-resolved is the photo: it's an external CDN image, so the client
+ * still fades it in when its bytes arrive.
+ */
 export type CabinFeatureProps = {
   id: string;
   name: string;
   area: string | null;
-  sleeps: number | null;
-  rate: string | null;
+  imageUrl: string | null;
+  /** "Beds" | "Occupancy" | null when neither bed count nor occupancy is known. */
+  capacityLabel: string | null;
+  /** "4 beds" | "12 people" | null. */
+  capacityValue: string | null;
+  /** Formatted "$55/night", or null. */
+  price: string | null;
+  /** Canonical Recreation.gov URL — the card's only explicit link. See lib/recgov.ts. */
+  recGovUrl: string;
 };
 
 export type CabinFeature = {
@@ -43,9 +64,17 @@ function inBox(lat: number, lng: number): boolean {
  */
 export async function fetchMapCabins(): Promise<CabinFeatureCollection> {
   const supabase = createStaticClient();
+  // Embed the single best image per cabin (limit 1, primary → preview ordering) rather
+  // than a flat join: cabin_images has ~3800 rows, past Supabase's 1000-row default cap,
+  // whereas the 511-cabin parent query stays well under it.
   const { data, error } = await supabase
     .from("cabins")
-    .select("facility_id, facility_name, rec_area_name, latitude, longitude, sleeps, nightly_rate");
+    .select(
+      "facility_id, facility_name, rec_area_name, latitude, longitude, sleeps, num_beds, nightly_rate, reservation_url, cabin_images(url)"
+    )
+    .order("is_primary", { referencedTable: "cabin_images", ascending: false })
+    .order("is_preview", { referencedTable: "cabin_images", ascending: false })
+    .limit(1, { referencedTable: "cabin_images" });
 
   if (error) {
     console.error("[ember] fetchMapCabins error", error.message);
@@ -57,6 +86,12 @@ export async function fetchMapCabins(): Promise<CabinFeatureCollection> {
     const { latitude: lat, longitude: lng } = row;
     if (typeof lat !== "number" || typeof lng !== "number" || !inBox(lat, lng)) continue;
 
+    const images = row.cabin_images as { url: string }[] | null;
+    const capacity = resolveCapacity({
+      num_beds: row.num_beds as number | null,
+      sleeps: row.sleeps as number | null,
+    });
+
     features.push({
       type: "Feature",
       geometry: { type: "Point", coordinates: [lng, lat] },
@@ -64,91 +99,14 @@ export async function fetchMapCabins(): Promise<CabinFeatureCollection> {
         id: row.facility_id,
         name: formatCabinName(row.facility_name),
         area: row.rec_area_name,
-        sleeps: row.sleeps,
-        rate: row.nightly_rate,
+        imageUrl: images?.[0]?.url ?? null,
+        capacityLabel: capacity?.label ?? null,
+        capacityValue: capacity?.value ?? null,
+        price: formatRate(row.nightly_rate as string | null),
+        recGovUrl: recGovUrl(row.facility_id, row.reservation_url as string | null),
       },
     });
   }
 
   return { type: "FeatureCollection", features };
-}
-
-/**
- * The extra detail the /explore card shows once a dot is selected. The map's GeoJSON
- * deliberately carries only what paints a dot plus a card headline; the photo and the
- * remaining facts are fetched per selection so /explore doesn't ship ~519 rows of
- * detail (and ~519 image URLs) on first load.
- */
-export type CabinCard = {
-  id: string;
-  name: string;
-  area: string | null;
-  /** Resolved server-side by resolveCapacity so every surface labels it identically. */
-  capacity: Fact | null;
-  /** Raw numeric string from Postgres; format with formatRate at render. */
-  rate: string | null;
-  type: string;
-  access: string | null;
-  elevationFt: number | null;
-  imageUrl: string | null;
-  /** Canonical Recreation.gov URL — the card's only explicit link. See lib/recgov.ts. */
-  recGovUrl: string;
-};
-
-type CardRow = Pick<
-  Cabin,
-  | "facility_id"
-  | "facility_name"
-  | "rec_area_name"
-  | "sleeps"
-  | "num_beds"
-  | "nightly_rate"
-  | "road_access"
-  | "road_access_conf"
-  | "elevation_ft"
-  | "elevation_ft_conf"
-  | "reservation_url"
->;
-
-/** Loads one cabin's card detail, including its preview photo. Null when the id is unknown. */
-export async function fetchCabinCard(id: string): Promise<CabinCard | null> {
-  const supabase = createStaticClient();
-
-  const [{ data: cabin, error }, { data: images }] = await Promise.all([
-    supabase
-      .from("cabins")
-      .select(
-        "facility_id, facility_name, rec_area_name, sleeps, num_beds, nightly_rate, road_access, road_access_conf, elevation_ft, elevation_ft_conf, reservation_url"
-      )
-      .eq("facility_id", id)
-      .maybeSingle<CardRow>(),
-    supabase
-      .from("cabin_images")
-      .select("url")
-      .eq("facility_id", id)
-      .order("is_primary", { ascending: false })
-      .order("is_preview", { ascending: false })
-      .limit(1),
-  ]);
-
-  if (error) {
-    console.error("[ember] fetchCabinCard error", error.message);
-    return null;
-  }
-  if (!cabin) return null;
-
-  const access = confident(cabin.road_access, cabin.road_access_conf);
-
-  return {
-    id: cabin.facility_id,
-    name: formatCabinName(cabin.facility_name),
-    area: cabin.rec_area_name,
-    capacity: resolveCapacity(cabin),
-    rate: cabin.nightly_rate,
-    type: getCabinType(cabin.facility_name),
-    access: access ? formatAccess(access) : null,
-    elevationFt: confident(cabin.elevation_ft, cabin.elevation_ft_conf),
-    imageUrl: images?.[0]?.url ?? null,
-    recGovUrl: recGovUrl(cabin.facility_id, cabin.reservation_url),
-  };
 }

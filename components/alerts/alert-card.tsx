@@ -147,6 +147,7 @@ export function AlertCard({
     <Image
       src={imageUrl}
       alt={cabinName}
+      unoptimized
       width={106}
       height={71}
       className="w-full h-full object-cover"
@@ -193,7 +194,7 @@ export function AlertCard({
           {/* Photo header */}
           <div className="relative w-full aspect-[3/2] overflow-hidden">
             {imageUrl && (
-              <Image src={imageUrl} alt={cabinName} fill sizes="100vw" className="object-cover" />
+              <Image src={imageUrl} alt={cabinName} fill sizes="100vw" unoptimized className="object-cover" />
             )}
             <div className="absolute top-4 left-4">
               <Badge type={mobileBadgeType} fill="fill">
