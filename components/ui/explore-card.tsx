@@ -73,6 +73,9 @@ function Photo({ imageUrl, name }: { imageUrl: string | null; name: string }) {
       src={imageUrl}
       alt={name}
       fill
+      // The card is a fixed 300px (w-copy-wide), so the optimizer serves ~300px (and 2x
+      // for retina) instead of the 1440px source — see next.config.ts.
+      sizes="300px"
       onLoad={() => setLoaded(true)}
       className={`object-cover transition-opacity duration-500 ${loaded ? "opacity-100" : "opacity-0"}`}
     />
