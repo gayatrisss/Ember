@@ -7,6 +7,7 @@ import { TextInput } from "@/components/ui/text-input";
 import { ToggleOptions } from "@/components/ui/toggle-options";
 import { RadioOptions } from "@/components/ui/radio-options";
 import { CalendarInput } from "@/components/ui/calendar-input";
+import { CalendarInputV2 } from "@/components/ui/calendar-input-v2";
 import { DateField } from "@/components/ui/date-field";
 import {
   DateCell,
@@ -14,6 +15,12 @@ import {
   type DateCellPosition,
   type DateCellTheme,
 } from "@/components/ui/date-cell";
+import {
+  DateCellV2,
+  type DateCellAvailability,
+  type DateCellSelection,
+  type DateCellVariant,
+} from "@/components/ui/date-cell-v2";
 import { ConfirmationAnimations } from "@/components/ui/confirmation-animations";
 import StatusBar from "@/components/ui/status-bar";
 import { Search } from "@/components/ui/search";
@@ -41,6 +48,57 @@ const DATE_CELL_THEMES: { theme: DateCellTheme; surface: string; label: string }
   { theme: "dark", surface: "bg-evergreen", label: "text-smoke/60" },
   { theme: "light", surface: "bg-wax", label: "text-night/50" },
 ];
+
+// ─── V2 (Direction D) demo data ───────────────────────────────────────────────
+const DATE_CELL_V2_STATES: {
+  label: string;
+  variant?: DateCellVariant;
+  availability?: DateCellAvailability;
+  alertSet?: boolean;
+  selection?: DateCellSelection;
+  position?: "single" | "start" | "end";
+}[] = [
+  { label: "Past", availability: "past" },
+  { label: "Booked", availability: "booked" },
+  { label: "Open", availability: "open" },
+  { label: "Alert · booked", availability: "booked", alertSet: true },
+  { label: "Alert · open", availability: "open", alertSet: true },
+  { label: "Range", selection: "range" },
+  { label: "Start", selection: "selected", position: "start" },
+  { label: "End", selection: "selected", position: "end" },
+  { label: "Selected", selection: "selected", position: "single" },
+  { label: "Hover", selection: "hover", position: "end" },
+  { label: "Day", variant: "day-label" },
+  { label: "Empty", variant: "empty" },
+];
+
+function v2CellContent(variant?: DateCellVariant) {
+  if (variant === "day-label") return "Mo";
+  if (variant === "empty") return "";
+  return "14";
+}
+
+// Current month, so real past dates render as the `past` tier. Open/alert days
+// are seeded relative to today so the demo survives whatever day it's viewed on.
+const V2_TODAY = new Date();
+V2_TODAY.setHours(0, 0, 0, 0);
+const V2_YEAR = V2_TODAY.getFullYear();
+const V2_MONTH = V2_TODAY.getMonth();
+const V2_MONTH_KEY = `${V2_YEAR}-${String(V2_MONTH + 1).padStart(2, "0")}`;
+const V2_DAYS_IN_MONTH = new Date(V2_YEAR, V2_MONTH + 1, 0).getDate();
+const V2_UPCOMING: number[] = [];
+for (let d = V2_TODAY.getDate() + 1; d <= V2_DAYS_IN_MONTH; d++) V2_UPCOMING.push(d);
+
+function v2Key(d: number) {
+  return `${V2_MONTH_KEY}-${String(d).padStart(2, "0")}T00:00:00Z`;
+}
+function v2KeySet(days: (number | undefined)[]) {
+  return new Set(days.filter((d): d is number => d !== undefined).map(v2Key));
+}
+const V2_FETCHED = new Set([V2_MONTH_KEY]);
+// First two upcoming days = a consecutive alert run (shows the joined pill).
+const V2_ALERTED = v2KeySet([V2_UPCOMING[0], V2_UPCOMING[1]]);
+const V2_AVAILABLE = v2KeySet([V2_UPCOMING[2], V2_UPCOMING[3], V2_UPCOMING[5], V2_UPCOMING[6]]);
 
 const COLORS = [
   { token: "night", bg: "bg-night", hex: "#0f1510", label: "Page background" },
@@ -126,6 +184,8 @@ export default function DesignPage() {
   const [radio, setRadio] = useState("immediate");
   const [calIn, setCalIn] = useState<Date | null>(null);
   const [calOut, setCalOut] = useState<Date | null>(null);
+  const [calInV2, setCalInV2] = useState<Date | null>(null);
+  const [calOutV2, setCalOutV2] = useState<Date | null>(null);
   const [modalVariant, setModalVariant] = useState<"default" | "destructive">("default");
   const [modalOpen, setModalOpen] = useState(false);
   const [showDisabled, setShowDisabled] = useState(false);
@@ -519,6 +579,72 @@ export default function DesignPage() {
                 setCalIn(i);
                 setCalOut(o);
               }}
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* Date Cell States V2 (Direction D) */}
+      <section className="page-container border-b border-wax/10 py-16">
+        <SectionLabel>Date Cell States · V2 (Direction D)</SectionLabel>
+        <div className="flex flex-col gap-6">
+          {DATE_CELL_THEMES.map(({ theme, surface, label: labelCls }) => (
+            <div key={theme} className={`${surface} rounded-xl p-6`}>
+              <div className="flex flex-wrap gap-8">
+                {DATE_CELL_V2_STATES.map((s) => (
+                  <div key={s.label} className="flex flex-col items-center gap-2">
+                    <DateCellV2
+                      variant={s.variant}
+                      availability={s.availability}
+                      alertSet={s.alertSet}
+                      selection={s.selection}
+                      position={s.position}
+                      theme={theme}
+                    >
+                      {v2CellContent(s.variant)}
+                    </DateCellV2>
+                    <span className={`text-data ${labelCls} uppercase tracking-widest`}>{s.label}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* CalendarInput V2 (Direction D) */}
+      <section className="page-container border-b border-wax/10 py-16">
+        <SectionLabel>CalendarInput · V2 (Direction D)</SectionLabel>
+        <div className="flex flex-wrap gap-6">
+          <div className="bg-evergreen rounded-xl p-6 w-fit">
+            <CalendarInputV2
+              checkIn={calInV2}
+              checkOut={calOutV2}
+              onChange={(i, o) => {
+                setCalInV2(i);
+                setCalOutV2(o);
+              }}
+              initialMonth={V2_MONTH}
+              initialYear={V2_YEAR}
+              availableDates={V2_AVAILABLE}
+              fetchedMonths={V2_FETCHED}
+              alertedDates={V2_ALERTED}
+            />
+          </div>
+          <div className="bg-wax rounded-xl p-6 w-fit">
+            <CalendarInputV2
+              theme="light"
+              checkIn={calInV2}
+              checkOut={calOutV2}
+              onChange={(i, o) => {
+                setCalInV2(i);
+                setCalOutV2(o);
+              }}
+              initialMonth={V2_MONTH}
+              initialYear={V2_YEAR}
+              availableDates={V2_AVAILABLE}
+              fetchedMonths={V2_FETCHED}
+              alertedDates={V2_ALERTED}
             />
           </div>
         </div>

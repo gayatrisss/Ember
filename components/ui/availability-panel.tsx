@@ -3,7 +3,7 @@
 import { useState, useEffect, useReducer, useRef, useMemo } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { BookingPanel } from "@/components/ui/booking-panel";
-import { CalendarInput } from "@/components/ui/calendar-input";
+import { CalendarInputV2 } from "@/components/ui/calendar-input-v2";
 import { ToggleOptions } from "@/components/ui/toggle-options";
 import { Select } from "@/components/ui/select";
 import { Spinner } from "@/components/ui/spinner";
@@ -523,7 +523,7 @@ export function AvailabilityPanel({
     default: // "calendar"
       title = "Select your travel days";
       body = (
-        <CalendarInput
+        <CalendarInputV2
           checkIn={checkIn}
           checkOut={checkOut}
           onChange={handleDateChange}
