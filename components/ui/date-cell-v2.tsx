@@ -107,7 +107,9 @@ function dateClasses(
   const textCls = t[availability];
   const clickable = availability !== "past";
   const cursor = clickable ? "cursor-pointer" : "";
-  const hover = clickable ? t.restHover : "";
+  // hover:rounded-lg overrides the resting `rounding` so a hovered cell is fully
+  // rounded even when it's an end/interior cap of an alert run.
+  const hover = clickable ? `${t.restHover} hover:rounded-lg` : "";
   // alertSet paints the wash behind an otherwise-resting cell. `rounding`
   // (from position) shapes both the wash pill and the resting hover fill, so a
   // consecutive alert run joins up and a plain hover is rounded, not square.

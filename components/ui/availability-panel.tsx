@@ -237,6 +237,51 @@ export function AvailabilityPanel({
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
+  // Existing alerts for THIS cabin, hydrated client-side (the static page can't
+  // know who's viewing). Anonymous viewers get 401 → treated as no alerts. Only
+  // `cancellation` alerts surface on the calendar as the alert-set wash.
+  const [alerts, setAlerts] = useState<
+    { facility_id: string; date_from: string; date_to: string; type: string }[]
+  >([]);
+
+  function loadAlerts() {
+    fetch("/api/alerts")
+      .then((r) => (r.ok ? r.json() : [])) // 401 (signed out) or error → no wash
+      .then((rows) => {
+        setAlerts(
+          Array.isArray(rows)
+            ? rows.filter((a) => a.facility_id === facilityId && a.type === "cancellation")
+            : []
+        );
+      })
+      .catch(() => {
+        // network error → leave whatever we had
+      });
+  }
+
+  useEffect(() => {
+    loadAlerts();
+  }, [facilityId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Expand each alert's [date_from, date_to] into per-night keys, INCLUSIVE of the
+  // checkout day so the wash matches the range highlight shown when it was picked.
+  // Keys use the calendar's toDateKey format (YYYY-MM-DDT00:00:00Z).
+  const alertedDates = useMemo(() => {
+    const set = new Set<string>();
+    for (const a of alerts) {
+      const cur = new Date(`${a.date_from.slice(0, 10)}T00:00:00`);
+      const end = new Date(`${a.date_to.slice(0, 10)}T00:00:00`);
+      while (cur <= end) {
+        const y = cur.getFullYear();
+        const m = String(cur.getMonth() + 1).padStart(2, "0");
+        const d = String(cur.getDate()).padStart(2, "0");
+        set.add(`${y}-${m}-${d}T00:00:00Z`);
+        cur.setDate(cur.getDate() + 1);
+      }
+    }
+    return set;
+  }, [alerts]);
+
   // Clean up the URL params once state has been restored from the OAuth redirect.
   useEffect(() => {
     if (viewParam) router.replace(`/cabin/${facilityId}`);
@@ -301,6 +346,7 @@ export function AvailabilityPanel({
       setConfirmedEmail(data.email);
       setConfirmedAlertId(type === "cancellation" ? data.alertId : null);
       setView("confirmed");
+      loadAlerts(); // reflect the just-created alert on the calendar
     } catch {
       setSubmitError("Something went wrong. Please try again.");
     } finally {
@@ -529,6 +575,7 @@ export function AvailabilityPanel({
           onChange={handleDateChange}
           availableDates={availableDates}
           fetchedMonths={fetchedMonths}
+          alertedDates={alertedDates}
           onMonthChange={handleMonthChange}
           initialMonth={checkIn?.getMonth()}
           initialYear={checkIn?.getFullYear()}
