@@ -1,16 +1,21 @@
 import type { CircleLayerSpecification, DataDrivenPropertyValueSpecification } from "mapbox-gl";
-import { MAP_COLORS, MAP_DOT_BAND_OPACITY } from "@/lib/mapbox";
+import { MAP_COLORS } from "@/lib/mapbox";
 
 /**
- * Mapbox GL paint specs for the /explore cabin dots. Kept apart from the map
- * component so the dot treatment can be tuned without touching the map's
- * interaction logic (selection, search, camera).
+ * Mapbox GL paint specs for the /explore cabin dots. Kept apart from the map component
+ * so the dot treatment can be tuned without touching the interaction logic.
  *
- * Source of truth: the "map dots" component in Figma (node 4157:4686), which draws
- * each dot as three concentric bands on a 32px box — 18px core, 26px halo, 32px
- * outer band — with the selected state adding an ember glow that bleeds to ~50px.
- * A GL circle layer only paints one fill plus one stroke, so each band is its own
- * layer and the rings come from stacking filled circles largest-first.
+ * Source of truth: the "map dots" component in Figma (node 4157:4686). Colours decoded
+ * from the rendered component, not guessed — both states share one structure:
+ *
+ *   core   (18px) — the accent: navy (#232d33) at rest, ember when selected
+ *   ring   (26px) — a WHITE disc with a thin accent stroke at its edge, so a clean white
+ *                   halo sits between the core and the stroke
+ *   glow   (32px+) — a soft accent bleed: subtle smoke at rest, wider ember when selected
+ *
+ * A GL circle paints one fill plus one stroke, so the white disc + accent edge is a
+ * single layer (fill white, stroke accent); the core and glow are their own circles,
+ * stacked largest-first.
  */
 
 /** The id the map marks interactive, so clicks and hovers hit the dots and nothing else. */
@@ -18,44 +23,57 @@ export const DOT_LAYER_ID = "cabin-dots";
 
 /**
  * Figma draws the dot at one size. On the map that size is only right up close: at the
- * statewide default (zoom 5.6) 519 dots at full size merge into a smear, so radii scale
- * down to roughly the old 11px footprint when zoomed out and reach the design at zoom 11.
+ * statewide default (zoom 5.6) 500+ dots at full size merge into a smear, so radii scale
+ * down when zoomed out and reach the design at zoom 11.
  */
 function byZoom(statewide: number, closeUp: number): DataDrivenPropertyValueSpecification<number> {
   return ["interpolate", ["linear"], ["zoom"], 5, statewide, 11, closeUp];
 }
 
-/** Band radii, statewide → design. Diameters at close-up: 18px core, 26px halo, 32px outer. */
+/** Resting radii, statewide → design (close-up diameters: 18px core, 26px ring). */
 const CORE_RADIUS = byZoom(3, 9);
-const HALO_RADIUS = byZoom(4.5, 13);
-const BAND_RADIUS = byZoom(5.5, 16);
-/** The selected state's glow, from the -27.5% bleed on the outermost group (~50px). */
-const GLOW_RADIUS = byZoom(9, 25);
+const RING_RADIUS = byZoom(4.5, 13);
+const GLOW_RADIUS = byZoom(5.5, 16);
+/** Selected radii — ~1.35× larger so the chosen cabin reads as bigger, not just glowier. */
+const SELECTED_CORE_RADIUS = byZoom(4, 12);
+const SELECTED_RING_RADIUS = byZoom(6, 17);
+/**
+ * The selected glow is two stacked circles, not one: a bright near-glow plus a wide soft
+ * bloom. A single mapbox circle can't be a radial gradient, but circle-blur:1 fades a
+ * circle from a full-opacity centre to a transparent edge, so two of them at different
+ * radii/opacities approximate Figma's soft ember bloom that spreads ~2.5× the dot.
+ */
+const SELECTED_GLOW_INNER = byZoom(9, 26);
+const SELECTED_GLOW_OUTER = byZoom(16, 48);
+/** The accent stroke on the white ring — thin up close, thinner still when zoomed out. */
+const STROKE_WIDTH = byZoom(0.5, 1.5);
 
 /**
- * Resting cabin dot: warm-gray core, wax halo, translucent wax outer band.
- * Ordered bottom-up — the outer band is drawn first and the smaller circles sit on
- * top of it, so each ring is the sliver of the layer below that still shows.
+ * Resting cabin dot: navy core, white ring edged in smoke, soft smoke glow.
+ * Ordered bottom-up — glow first, then the white ring, then the core on top.
  */
 export const cabinDotLayers: CircleLayerSpecification[] = [
   {
-    // Widest band doubles as the click target, so the whole dot is clickable, not just its core.
+    // Widest layer doubles as the click target, so the whole dot is clickable.
     id: DOT_LAYER_ID,
     type: "circle",
     source: "cabins",
     paint: {
-      "circle-radius": BAND_RADIUS,
-      "circle-color": MAP_COLORS.wax,
-      "circle-opacity": MAP_DOT_BAND_OPACITY,
+      "circle-radius": GLOW_RADIUS,
+      "circle-color": MAP_COLORS.smoke,
+      "circle-opacity": 0.16,
+      "circle-blur": 0.5,
     },
   },
   {
-    id: "cabin-dot-halo",
+    id: "cabin-dot-ring",
     type: "circle",
     source: "cabins",
     paint: {
-      "circle-radius": HALO_RADIUS,
-      "circle-color": MAP_COLORS.wax,
+      "circle-radius": RING_RADIUS,
+      "circle-color": MAP_COLORS.white,
+      "circle-stroke-width": STROKE_WIDTH,
+      "circle-stroke-color": MAP_COLORS.smoke,
     },
   },
   {
@@ -64,46 +82,50 @@ export const cabinDotLayers: CircleLayerSpecification[] = [
     source: "cabins",
     paint: {
       "circle-radius": CORE_RADIUS,
-      "circle-color": MAP_COLORS.waxDim,
+      "circle-color": MAP_COLORS.smoke,
     },
   },
 ];
 
 /**
- * The selected cabin, redrawn on top in ember. Same three bands as the resting dot plus
- * the outer glow. Every layer here is filtered to the selected id by the map, so all of
- * them render nothing when the selection is empty.
+ * The selected cabin, redrawn on top in ember. Same core + white-ring structure, with a
+ * wider, softer ember glow. Every layer is filtered to the selected id by the map, so
+ * they render nothing when the selection is empty.
  */
 export const selectedDotLayers: CircleLayerSpecification[] = [
   {
-    id: "cabin-dot-selected-glow",
+    // Wide soft bloom — the long, faint outer tail of the glow.
+    id: "cabin-dot-selected-glow-outer",
     type: "circle",
     source: "cabins",
     paint: {
-      "circle-radius": GLOW_RADIUS,
+      "circle-radius": SELECTED_GLOW_OUTER,
       "circle-color": MAP_COLORS.ember,
-      "circle-opacity": 0.35,
-      // Feathers the fill out to nothing, standing in for the soft radial bleed in Figma.
-      "circle-blur": 0.8,
+      "circle-opacity": 0.28,
+      "circle-blur": 1,
     },
   },
   {
-    id: "cabin-dot-selected-band",
+    // Brighter near-glow — the hotter ember right around the dot.
+    id: "cabin-dot-selected-glow-inner",
     type: "circle",
     source: "cabins",
     paint: {
-      "circle-radius": BAND_RADIUS,
+      "circle-radius": SELECTED_GLOW_INNER,
       "circle-color": MAP_COLORS.ember,
-      "circle-opacity": MAP_DOT_BAND_OPACITY,
+      "circle-opacity": 0.5,
+      "circle-blur": 1,
     },
   },
   {
-    id: "cabin-dot-selected-halo",
+    id: "cabin-dot-selected-ring",
     type: "circle",
     source: "cabins",
     paint: {
-      "circle-radius": HALO_RADIUS,
-      "circle-color": MAP_COLORS.wax,
+      "circle-radius": SELECTED_RING_RADIUS,
+      "circle-color": MAP_COLORS.white,
+      "circle-stroke-width": STROKE_WIDTH,
+      "circle-stroke-color": MAP_COLORS.ember,
     },
   },
   {
@@ -111,7 +133,7 @@ export const selectedDotLayers: CircleLayerSpecification[] = [
     type: "circle",
     source: "cabins",
     paint: {
-      "circle-radius": CORE_RADIUS,
+      "circle-radius": SELECTED_CORE_RADIUS,
       "circle-color": MAP_COLORS.ember,
     },
   },

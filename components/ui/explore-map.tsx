@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 // Aliased: the default export would otherwise shadow the global Map constructor.
 import MapGL, { Source, Layer, Popup, type MapRef } from "react-map-gl/mapbox";
@@ -61,6 +61,21 @@ export function ExploreMap({ cabins }: { cabins: CabinFeatureCollection }) {
 
   const selected = selectedId ? (byId.get(selectedId) ?? null) : null;
 
+  // Which side of the pin the card sits on. Computed ONCE when a cabin is selected and
+  // then frozen: passing an explicit anchor stops mapbox from re-deciding it on every
+  // pan (which made the open card jump around as you dragged the map away from it).
+  const [anchor, setAnchor] = useState<"top" | "bottom">("bottom");
+
+  /** Card above the pin ("bottom") when there's room; below ("top") when the pin is high. */
+  const anchorForPin = useCallback((lng: number, lat: number): "top" | "bottom" => {
+    const map = mapRef.current?.getMap();
+    if (!map) return "bottom";
+    const { y } = map.project([lng, lat]);
+    // The card is ~420px; if the pin sits in the lower ~40% of the map there's room to
+    // open it above the pin, otherwise open it below.
+    return y > map.getContainer().clientHeight * 0.6 ? "bottom" : "top";
+  }, []);
+
   const setSelected = useCallback(
     (id: string | null) => {
       router.replace(id ? `/explore?cabin=${id}` : "/explore", { scroll: false });
@@ -88,9 +103,12 @@ export function ExploreMap({ cabins }: { cabins: CabinFeatureCollection }) {
         setSelected(null);
         return;
       }
+      // A click doesn't move the map, so compute the anchor from the pin where it is.
+      const [lng, lat] = feature.geometry.coordinates as [number, number];
+      setAnchor(anchorForPin(lng, lat));
       setSelected((feature.properties as { id: string }).id);
     },
-    [setSelected]
+    [setSelected, anchorForPin]
   );
 
   const handleSearchSelect = useCallback(
@@ -98,6 +116,8 @@ export function ExploreMap({ cabins }: { cabins: CabinFeatureCollection }) {
       const feature = byId.get(cabin.id);
       if (!feature) return;
       const [lng, lat] = feature.geometry.coordinates;
+      // The fly lands the pin below centre (HEADER_CLEARANCE), so the card opens above it.
+      setAnchor("bottom");
       flyTo(lng, lat);
       setSelected(cabin.id);
     },
@@ -112,6 +132,8 @@ export function ExploreMap({ cabins }: { cabins: CabinFeatureCollection }) {
     if (didInitialFly.current || !selected) return;
     didInitialFly.current = true;
     const [lng, lat] = selected.geometry.coordinates;
+    // Same as search: the fly drops the pin below centre, so the card opens above it.
+    setAnchor("bottom");
     flyTo(lng, lat);
   }, [selected, flyTo]);
 
@@ -158,9 +180,9 @@ export function ExploreMap({ cabins }: { cabins: CabinFeatureCollection }) {
         }}
       >
         <Source id="cabins" type="geojson" data={cabins}>
-          {/* Each dot is three stacked circles (outer band → halo → core); the selected
-              dot is four (glow → band → halo → core), drawn after so it sits on top and
-              filtered to the current id — with no selection the filter matches nothing. */}
+          {/* Each dot is three stacked circles (glow → white ring → core). The selected
+              set is drawn after so it sits on top, filtered to the current id — with no
+              selection the filter matches nothing. See lib/map-layers. */}
           {cabinDotLayers.map((layer) => (
             <Layer key={layer.id} {...layer} />
           ))}
@@ -170,16 +192,18 @@ export function ExploreMap({ cabins }: { cabins: CabinFeatureCollection }) {
         </Source>
 
         {selected && (
-          // No `anchor` prop on purpose: mapbox picks the side with room and flips the
-          // card near a viewport edge, which is the collision handling this needs.
+          // `anchor` is set explicitly (computed once at selection) so mapbox keeps the
+          // card on the same side of the pin as you pan — leaving it unset makes mapbox
+          // re-decide the side on every move, which jumps the open card around.
           // closeOnClick is off because deselection is already owned by the map's own
           // click handler above.
           //
-          // offset clears the selected dot (radius 7 + 2px stroke) plus a visible gap.
-          // It has to absorb the ~10px the hidden tip used to occupy — see utilities.css.
+          // offset clears the selected dot's glow plus a visible gap; it also absorbs the
+          // ~10px the hidden popup tip used to occupy — see utilities.css.
           <Popup
             longitude={selected.geometry.coordinates[0]}
             latitude={selected.geometry.coordinates[1]}
+            anchor={anchor}
             offset={20}
             closeButton={false}
             closeOnClick={false}

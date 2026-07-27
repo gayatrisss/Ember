@@ -22,19 +22,14 @@ export const MONTANA_VIEW = { longitude: -109.6, latitude: 47.0, zoom: 5.6 };
  */
 export const MAP_COLORS = {
   smoke: "#5f7a8a",
+  /** Figma "Smoke 20% brightness" (#232d33) — the resting dot's dark navy core. */
+  smokeDeep: "#232d33",
   wax: "#ede8dc",
-  /** Wax at 70% brightness. The resting cabin dot: warm gray, not the blue-gray of smoke. */
-  waxDim: "#b2afa6",
+  /** The crisp ring around the dot core. Figma renders it near-white, not warm wax. */
+  white: "#ffffff",
   ember: "#d45a20",
   night: "#0f1510",
 } as const;
-
-/**
- * The translucent outer bands of the map dots. Figma expresses these as 45%-opacity
- * fills; GL takes the base hex plus a separate opacity, so the value lives here and
- * the color comes from MAP_COLORS.
- */
-export const MAP_DOT_BAND_OPACITY = 0.45;
 
 type StaticMapOptions = {
   lat: number;
