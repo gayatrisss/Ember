@@ -195,8 +195,12 @@ export function ExploreMap({ cabins }: { cabins: CabinFeatureCollection }) {
           // `anchor` is set explicitly (computed once at selection) so mapbox keeps the
           // card on the same side of the pin as you pan — leaving it unset makes mapbox
           // re-decide the side on every move, which jumps the open card around.
-          // closeOnClick is off because deselection is already owned by the map's own
-          // click handler above.
+          // closeOnClick / closeButton are off, so mapbox never closes the popup itself —
+          // deselection is driven entirely by our own state (bare-map click, Escape),
+          // which unmounts this Popup. So there is deliberately NO onClose handler:
+          // react-map-gl fires onClose on unmount too, and when the unmount is caused by
+          // the card's link navigating to /cabin/[id], an onClose that called setSelected(null)
+          // would router.replace("/explore") mid-navigation and bounce the user right back.
           //
           // offset clears the selected dot's glow plus a visible gap; it also absorbs the
           // ~10px the hidden popup tip used to occupy — see utilities.css.
@@ -207,7 +211,6 @@ export function ExploreMap({ cabins }: { cabins: CabinFeatureCollection }) {
             offset={20}
             closeButton={false}
             closeOnClick={false}
-            onClose={() => setSelected(null)}
             maxWidth="300px"
             className="ember-popup"
           >
