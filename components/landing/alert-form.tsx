@@ -37,10 +37,12 @@ export default function AlertForm() {
   const canSubmit = !!selectedCabin && !!checkIn && !!checkOut;
 
   return (
-    <div className="w-full p-8 bg-evergreen rounded-2xl shadow-ember-lg">
-      <span className="text-data text-wax/70 uppercase tracking-wider">SET AN ALERT</span>
+    // Below lg the card is dropped entirely — the form sits directly on the page
+    // glow, and .field-bare darkens its fields so they still read as inputs.
+    <div className="w-full field-bare lg:p-8 lg:bg-evergreen lg:rounded-2xl lg:shadow-ember-lg">
+      <span className="text-eyebrow text-wax lg:text-wax/70 uppercase">SET AN ALERT</span>
 
-      <div className="mt-8 space-y-6">
+      <div className="mt-grouped lg:mt-8 space-y-grouped">
         <Search onSelect={handleCabinSelect} />
 
         <DateField
@@ -60,7 +62,7 @@ export default function AlertForm() {
         type="button"
         onClick={handleSubmit}
         disabled={!canSubmit}
-        className="mt-8 w-full h-14 bg-ember text-wax rounded-md text-body hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:brightness-100"
+        className="mt-grouped lg:mt-8 w-full h-12 lg:h-14 bg-ember text-wax rounded-lg lg:rounded-md text-button hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:brightness-100"
       >
         Let&apos;s escape
       </button>

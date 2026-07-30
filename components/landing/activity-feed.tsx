@@ -39,12 +39,12 @@ export default function ActivityFeed({ activities }: { activities: ActivityItem[
   }
 
   return (
-    <section className="page-container py-16">
-      <div className="flex justify-between items-center">
-        <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-3">
-          <div className="flex items-center gap-3">
-            <div className="w-3 h-3 rounded-full bg-ember shadow-ember-sm" />
-            <span className="text-data text-wax uppercase tracking-wider">LATELY ON EMBER</span>
+    <section className="page-container pt-section lg:py-16">
+      <div className="flex justify-between items-center gap-4">
+        <div className="flex flex-col lg:flex-row lg:items-center gap-1 lg:gap-3 min-w-0">
+          <div className="flex items-center gap-2 lg:gap-3">
+            <div className="w-3 h-3 rounded-full bg-ember shadow-ember-sm shrink-0" />
+            <span className="text-eyebrow text-wax uppercase">LATELY ON EMBER</span>
           </div>
           {/* The section's one honesty marker: the activity below is illustrative.
               Kept subtle and stated once here rather than repeated on every card. */}
@@ -52,7 +52,7 @@ export default function ActivityFeed({ activities }: { activities: ActivityItem[
             SAMPLE ACTIVITY · CABINS ARE REAL
           </span>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-3 shrink-0">
           <IconButton
             icon={ArrowLeft}
             label="Previous activities"
@@ -73,7 +73,7 @@ export default function ActivityFeed({ activities }: { activities: ActivityItem[
           plus the 24px (gap-6) gutters summing to exactly 100%. */}
       <div
         ref={listRef}
-        className="mt-8 flex items-stretch gap-6 overflow-x-auto snap-x snap-mandatory no-scrollbar"
+        className="mt-bonded lg:mt-bonded-lg flex items-stretch gap-6 overflow-x-auto snap-x snap-mandatory no-scrollbar"
       >
         {activities.map((activity) => (
           <div

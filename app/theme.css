@@ -30,6 +30,22 @@
   --breakpoint-sm: 500px;   /* mobile — covers modern phones in portrait */
   --breakpoint-xl: 1440px;  /* large monitor — above our 1280px content max */
 
+  /* === Vertical rhythm ===
+   * Mirrors the Ember/Spacing collection in Figma (Mobile / Desktop modes). Four
+   * named intervals rather than a free scale, so every vertical gap is a choice
+   * among four. The invariant: bonded < grouped < section < major, and space
+   * inside a group is always smaller than the space around it.
+   * The -lg tokens are the Desktop mode; `grouped` is deliberately the same at
+   * both breakpoints, so it has no -lg variant.
+   */
+  --spacing-bonded: 16px;      /* headline ↔ subcopy, label ↔ its content */
+  --spacing-bonded-lg: 32px;
+  --spacing-grouped: 24px;     /* field ↔ field, step ↔ step */
+  --spacing-section: 80px;     /* blocks within a section, minor section breaks */
+  --spacing-section-lg: 96px;
+  --spacing-major: 200px;      /* major page section breaks */
+  --spacing-major-lg: 256px;
+
   /* === Layout (px) — not on the default Tailwind scale === */
   --spacing-gutter: 120px;
   --width-copy: 280px;

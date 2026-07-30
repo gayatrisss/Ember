@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Calendar } from "lucide-react";
 import { CalendarInput } from "@/components/ui/calendar-input";
+import { usePopoverFlip } from "@/components/ui/use-popover";
 
 // A field-styled date-range picker: an input-looking trigger (shares .field-control +
 // the placeholder token) that opens a CalendarInput popover. It's a button, not an
@@ -17,6 +18,11 @@ type DateFieldProps = {
   placeholder?: string;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
+};
+
+const placementClasses = {
+  bottom: "top-full mt-1",
+  top: "bottom-full mb-1",
 };
 
 function formatRange(checkIn: Date | null, checkOut: Date | null): string {
@@ -37,8 +43,13 @@ export function DateField({
 }: DateFieldProps) {
   const [internalOpen, setInternalOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const popoverRef = useRef<HTMLDivElement>(null);
 
   const open = openProp ?? internalOpen;
+  // The calendar keeps its full height and changes direction instead of scrolling:
+  // a month grid split across a scroll boundary is unreadable.
+  const placement = usePopoverFlip(triggerRef, popoverRef, open);
   const setOpen = (next: boolean) => {
     if (openProp === undefined) setInternalOpen(next);
     onOpenChange?.(next);
@@ -77,6 +88,7 @@ export function DateField({
     <div ref={rootRef}>
       <div className="relative">
         <button
+          ref={triggerRef}
           type="button"
           onClick={() => setOpen(!open)}
           className={[
@@ -96,7 +108,10 @@ export function DateField({
         </button>
 
         {open && (
-          <div className="absolute left-0 right-0 top-full mt-1 z-50 bg-evergreen border border-wax/10 rounded-xl p-5">
+          <div
+            ref={popoverRef}
+            className={`absolute left-0 right-0 z-50 bg-evergreen border border-wax/10 rounded-xl p-5 ${placementClasses[placement]}`}
+          >
             <CalendarInput checkIn={checkIn} checkOut={checkOut} onChange={handleChange} />
           </div>
         )}
