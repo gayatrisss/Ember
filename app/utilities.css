@@ -57,6 +57,69 @@
     line-height: 1.5;
   }
 
+  /* Button labels — Geist Medium 16px. Distinct from .text-body: a button label
+     needs line-height 1 so it centres in a fixed-height control. Previously faked
+     at call sites as `text-body font-medium`, which left it at 1.2. */
+  .text-button {
+    font-family: var(--font-sans);
+    font-weight: 500;
+    font-size: 16px;
+    line-height: 1;
+  }
+
+  /* Section eyebrows — "SET AN ALERT", "LATELY ON EMBER". 10px mono is unreadable
+     on a phone, so mobile reads them as body copy and desktop tightens to the mono
+     data register. Tracking lives here rather than at call sites, which used to
+     pick tracking-wider/widest inconsistently. */
+  .text-eyebrow {
+    font-family: var(--font-sans);
+    font-weight: 400;
+    font-size: 16px;
+    line-height: 1.2;
+    letter-spacing: 0;
+    @media (min-width: 1024px) {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      line-height: 1.5;
+      letter-spacing: 0.05em;
+    }
+  }
+
+  /* Numbered-step markers (01 / 02 / 03). Same mono-on-desktop idea as
+     .text-eyebrow but a tier smaller, since the number sits against a rule
+     rather than heading a section. */
+  .text-step-number {
+    font-family: var(--font-sans);
+    font-weight: 500;
+    font-size: 12px;
+    line-height: 1.5;
+    letter-spacing: 0.05em;
+    @media (min-width: 1024px) {
+      font-family: var(--font-mono);
+      font-weight: 400;
+      font-size: 10px;
+    }
+  }
+
+  /* Step headlines. Genuinely different sizes per breakpoint: the mobile layout
+     is a single column where the headline carries the section, desktop is a
+     three-up grid where it sits under a rule. Neither -md nor -sm can express
+     this, since both are used at fixed sizes elsewhere. */
+  .text-step-headline {
+    font-family: var(--font-display);
+    font-style: italic;
+    font-weight: 700;
+    font-size: 36px;
+    line-height: 1.2;
+    font-variation-settings: "SOFT" 0, "WONK" 1, "opsz" 96;
+    font-feature-settings: normal;
+    -webkit-font-smoothing: antialiased;
+    @media (min-width: 1024px) {
+      font-size: 24px;
+      font-variation-settings: "opsz" 96;
+    }
+  }
+
   /* Calendar date numbers — Geist Medium 20px */
   .text-calendar-date {
     font-family: var(--font-sans);
@@ -106,6 +169,19 @@
     font-size: 24px;
     line-height: 1.2;
     font-variation-settings: "opsz" 96;
+    font-feature-settings: normal;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Fraunces at 16px — the footer tagline, a half-size echo of the wordmark
+     directly above it. Replaces the never-defined .text-display-geist-sm. */
+  .text-display-fraunces-xs {
+    font-family: var(--font-display);
+    font-style: italic;
+    font-weight: 700;
+    font-size: 16px;
+    line-height: 1.2;
+    font-variation-settings: "SOFT" 0, "WONK" 1, "opsz" 96;
     font-feature-settings: normal;
     -webkit-font-smoothing: antialiased;
   }
@@ -203,6 +279,31 @@
   }
   .field-control:focus-within .field-input::placeholder {
     color: color-mix(in oklch, var(--color-ember) 50%, transparent);
+  }
+
+  /* Mobile alert form drops its card, so an evergreen field would sit invisibly on
+     the evergreen page. Below lg the fields go darker than the page and thicken
+     their underline so they carry their own separation. Scoped to .field-bare so
+     fields on other surfaces (cabin, explore) are untouched. */
+  @media (max-width: 1023px) {
+    .field-bare .field-control {
+      background-color: var(--color-night);
+      border-bottom-width: 2px;
+    }
+  }
+
+  /* Fixed mobile tab bar: sits above the iOS home indicator. */
+  .pb-safe {
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
+  }
+
+  /* Clears the fixed tab bar so page content (and the footer) never sits under it.
+     70px of bar (24px icon + 4px gap + 18px label + 24px padding) + safe area. */
+  .pb-tab-bar {
+    padding-bottom: calc(70px + max(12px, env(safe-area-inset-bottom)));
+    @media (min-width: 1024px) {
+      padding-bottom: 0;
+    }
   }
 
   /* Standard bottom padding before the footer — 48px mobile, 120px desktop */

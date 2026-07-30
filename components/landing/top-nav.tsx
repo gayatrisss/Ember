@@ -21,7 +21,8 @@ export default function TopNav({ email, name }: { email: string | null; name: st
   return (
     <>
       <nav
-        className={`fixed top-0 left-0 right-0 z-50 transition-colors duration-300 bg-ash  ${
+        data-top-nav
+        className={`hidden lg:block fixed top-0 left-0 right-0 z-50 transition-colors duration-300 bg-ash  ${
           scrolled ? "backdrop-blur-sm" : ""
         }`}
       >
@@ -84,8 +85,9 @@ export default function TopNav({ email, name }: { email: string | null; name: st
           </div>
         </div>
       </nav>
-      {/* Offset for fixed nav */}
-      <div className="h-20" aria-hidden="true" />
+      {/* Offset for fixed nav — desktop only; below lg the nav is replaced by the
+          bottom tab bar and the wordmark moves into the hero. */}
+      <div className="hidden lg:block h-20" aria-hidden="true" />
     </>
   );
 }

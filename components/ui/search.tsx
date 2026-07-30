@@ -5,6 +5,7 @@ import { Home, Loader2, Search as SearchIcon } from "lucide-react";
 import { Command as CommandPrimitive } from "cmdk";
 import { Field } from "@/components/ui/field";
 import { useCabinSearch, type Cabin } from "@/components/ui/use-cabin-search";
+import { usePopoverMaxHeight } from "@/components/ui/use-popover";
 import { formatCabinName } from "@/lib/format";
 
 // When `onSelect` is provided, choosing a cabin fills the input and reports the
@@ -14,6 +15,8 @@ export function Search({ onSelect }: { onSelect?: (cabin: Cabin) => void }) {
   const { query, setQuery, ready, q, visibleResults, hasMore, handleScroll } = useCabinSearch();
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const controlRef = useRef<HTMLDivElement>(null);
+  const popoverRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     function onDown(e: MouseEvent) {
@@ -26,6 +29,7 @@ export function Search({ onSelect }: { onSelect?: (cabin: Cabin) => void }) {
   }, []);
 
   const showDropdown = open && q.length > 0;
+  usePopoverMaxHeight(controlRef, popoverRef, showDropdown);
 
   return (
     <Field label="WHERE">
@@ -36,7 +40,7 @@ export function Search({ onSelect }: { onSelect?: (cabin: Cabin) => void }) {
             if (e.key === "Escape") setOpen(false);
           }}
         >
-          <div className="field-control field-control-underline">
+          <div ref={controlRef} className="field-control field-control-underline">
             <span className="field-icon">
               {!ready ? (
                 <Loader2 size={16} className="animate-spin" />
@@ -55,8 +59,9 @@ export function Search({ onSelect }: { onSelect?: (cabin: Cabin) => void }) {
 
           {showDropdown && (
             <div
+              ref={popoverRef}
               onScroll={handleScroll}
-              className="absolute left-0 right-0 top-full mt-1 z-50 bg-night border border-ember/25 rounded-xl max-h-96 overflow-y-auto shadow-ember-md"
+              className="absolute left-0 right-0 top-full mt-1 z-50 bg-night border border-ember/25 rounded-xl max-h-96 overflow-y-auto overscroll-contain shadow-ember-md"
             >
               <CommandPrimitive.List>
                 {q.length === 1 && (
