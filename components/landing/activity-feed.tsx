@@ -30,12 +30,27 @@ export default function ActivityFeed({ activities }: { activities: ActivityItem[
     };
   }, []);
 
-  // Page by one full viewport so cards always land flush on a card boundary
-  // (snap-mandatory does the aligning). Works at every breakpoint since it keys
-  // off the visible width rather than a hard-coded card count.
+  // Page by a whole number of cards. Scrolling by clientWidth alone is short by one
+  // gap per press (a card occupies cardWidth + gap), which accumulates into cards
+  // sitting progressively off-gutter — snap-mandatory doesn't reliably recover from
+  // a programmatic scroll on iOS. Targeting an absolute offset rather than a delta
+  // also stops any residual error compounding. Still keys off measured geometry, so
+  // it holds at every breakpoint without a hard-coded card count.
   function page(direction: -1 | 1) {
     const el = listRef.current;
-    if (el) el.scrollBy({ left: direction * el.clientWidth, behavior: "smooth" });
+    const first = el?.firstElementChild;
+    if (!el || !first) return;
+
+    const gap = parseFloat(getComputedStyle(el).columnGap) || 0;
+    const step = first.getBoundingClientRect().width + gap;
+    if (step <= 0) return;
+
+    const perPage = Math.max(1, Math.round(el.clientWidth / step));
+    const currentIndex = Math.round(el.scrollLeft / step);
+    const lastIndex = Math.max(0, el.children.length - perPage);
+    const nextIndex = Math.min(lastIndex, Math.max(0, currentIndex + direction * perPage));
+
+    el.scrollTo({ left: nextIndex * step, behavior: "smooth" });
   }
 
   return (

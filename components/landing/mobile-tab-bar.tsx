@@ -36,7 +36,7 @@ export default function MobileTabBar({ email }: { email: string | null }) {
       data-tab-bar
       // z-40 keeps the bar under field popovers (z-50). Without this the bar wins
       // on paint order alone, since it renders after the page content.
-      className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-evergreen pb-safe"
+      className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-night pb-safe"
     >
       <div className="flex items-stretch">
         <Tab
