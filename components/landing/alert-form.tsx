@@ -28,19 +28,20 @@ export default function AlertForm() {
   }
 
   function handleSubmit() {
-    if (!selectedCabin || !checkIn || !checkOut) return;
-    router.push(
-      `/cabin/${selectedCabin.id}?checkIn=${toDateStr(checkIn)}&checkOut=${toDateStr(checkOut)}`
-    );
+    if (!selectedCabin || !checkIn || !checkOut) {
+      router.push(`/explore`);
+    } else {
+      router.push(
+        `/cabin/${selectedCabin.id}?checkIn=${toDateStr(checkIn)}&checkOut=${toDateStr(checkOut)}`
+      );
+    }
   }
-
-  const canSubmit = !!selectedCabin && !!checkIn && !!checkOut;
 
   return (
     // Below lg the card is dropped entirely — the form sits directly on the page
     // glow, and .field-bare darkens its fields so they still read as inputs.
-    <div className="w-full field-bare lg:p-8 lg:bg-evergreen lg:rounded-2xl lg:shadow-ember-lg">
-      <span className="text-eyebrow text-wax lg:text-wax/70 uppercase">SET AN ALERT</span>
+    <div className="w-full field-bare p-8 bg-ash rounded-2xl">
+      <span className="text-eyebrow text-wax/70 uppercase">SET AN ALERT</span>
 
       <div className="mt-grouped lg:mt-8 space-y-grouped">
         <Search onSelect={handleCabinSelect} />
@@ -61,8 +62,7 @@ export default function AlertForm() {
       <button
         type="button"
         onClick={handleSubmit}
-        disabled={!canSubmit}
-        className="mt-grouped lg:mt-8 w-full h-12 lg:h-14 bg-ember text-wax rounded-lg lg:rounded-md text-button hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:brightness-100"
+        className="mt-grouped lg:mt-8 w-full h-12 lg:h-14 bg-ember text-wax rounded-lg lg:rounded-md text-button hover:brightness-110"
       >
         Let&apos;s escape
       </button>
