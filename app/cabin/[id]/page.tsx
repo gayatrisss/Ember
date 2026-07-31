@@ -32,7 +32,14 @@ export default async function CabinPage({
 
   const supabase = await createClient();
 
-  const [{ data: cabin }, { data: images }, { data: { user } }, initialMonths] = await Promise.all([
+  const [
+    { data: cabin },
+    { data: images },
+    {
+      data: { user },
+    },
+    initialMonths,
+  ] = await Promise.all([
     supabase.from("cabins").select("*").eq("facility_id", id).single<Cabin>(),
     supabase
       .from("cabin_images")
@@ -71,7 +78,7 @@ export default async function CabinPage({
 
       <StatusBar facilityId={id} reservationUrl={cabin.reservation_url} />
 
-      <main className="flex-1 page-container pt-grouped lg:pt-12 pb-page">
+      <main className="flex-1 page-container pt-grouped lg:pt-12 pb-major">
         <CabinHeader cabin={cabin} name={name} />
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-grouped lg:mt-8 lg:items-stretch">

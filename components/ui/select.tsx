@@ -109,7 +109,7 @@ export function Select({ value, options, onChange, ariaLabel, className }: Selec
             }}
             className={`w-full flex items-center px-4 py-3 text-body text-left transition-colors ${
               isLast ? "" : "border-b border-ember-40"
-            } ${isSelected ? "bg-ember text-wax font-medium " : "text-wax hover:bg-ember/10 "}`}
+            } ${isSelected ? "bg-ember text-wax font-medium" : "text-wax hover:bg-ember/10 "}`}
           >
             {opt.label}
           </button>
