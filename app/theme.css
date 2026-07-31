@@ -54,7 +54,7 @@
    * Heights of the fixed furniture, as spacing tokens so they can be used for
    * both positioning (bottom-tab-bar) and clearance (padding).
    */
-  --spacing-tab-bar: calc(69px + max(12px, env(safe-area-inset-bottom)));
+  --spacing-tab-bar: calc(68px + max(12px, env(safe-area-inset-bottom)));
   --spacing-docked-bar: 112px; /* cabin action bar at its tallest: context line + 48 button + padding */
   --spacing-drawer-top: 120px; /* strip of page left visible above the drawer */
 

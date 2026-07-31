@@ -6,8 +6,8 @@ import AvailabilityDrawer from "./availability-drawer";
 
 type BarState = {
   label: string;
-  /** Line above the button. Absent only before a range is chosen. */
-  context: string | null;
+  /** Dates left, status right. Absent only before a range is chosen. */
+  context: { dates: string; status: string } | null;
   variant: "primary" | "disabled" | "secondary";
   /** Set when the bar should hand off directly instead of opening the drawer. */
   href?: string;
@@ -19,28 +19,28 @@ function barState(summary: PanelSummary | null): BarState {
   if (!summary || !summary.dateRange) {
     return { label: "Check availability", context: null, variant: "primary" };
   }
-  const { dateRange } = summary;
+  const dates = summary.dateRange;
   if (summary.loading) {
-    return { label: "Check availability", context: `${dateRange} · Checking…`, variant: "disabled" };
+    return { label: "Check availability", context: { dates, status: "Checking…" }, variant: "disabled" };
   }
   if (summary.error) {
-    return { label: "Try again", context: `${dateRange} · Unavailable`, variant: "secondary" };
+    return { label: "Try again", context: { dates, status: "Unavailable" }, variant: "secondary" };
   }
   if (summary.status === "available") {
     return {
       label: "Book on Recreation.gov →",
-      context: `${dateRange} · Available`,
+      context: { dates, status: "Available" },
       variant: "primary",
       href: summary.bookUrl,
     };
   }
   if (summary.status === "booked") {
-    return { label: "Set up an alert →", context: `${dateRange} · Booked`, variant: "primary" };
+    return { label: "Set up an alert →", context: { dates, status: "Booked" }, variant: "primary" };
   }
   if (summary.status === "not-open") {
-    return { label: "Set a reminder →", context: `${dateRange} · Not yet open`, variant: "primary" };
+    return { label: "Set a reminder →", context: { dates, status: "Not yet open" }, variant: "primary" };
   }
-  return { label: "Check availability", context: dateRange, variant: "primary" };
+  return { label: "Check availability", context: { dates, status: "" }, variant: "primary" };
 }
 
 const VARIANT_CLASSES = {
@@ -54,17 +54,20 @@ type Props = {
   cabinName: string;
   reservationUrl?: string | null;
   initialMonths?: Record<string, unknown>;
-  /** Opens on arrival when the user came from the home page alert form. */
-  initiallyOpen?: boolean;
 };
 
 /**
  * Owns the mobile availability drawer and the docked bar that opens it. Above lg
  * neither exists: the bar is hidden and the drawer degrades to a plain wrapper,
  * so the panel sits in the cabin grid unchanged.
+ *
+ * The drawer never opens on its own, even when the user arrives with dates from
+ * the home page. Those dates prefill the panel and the availability lookup runs
+ * behind the closed drawer, so the bar lands already resolved ("Jul 12 – Jul 14 ·
+ * Booked") while the user reads the cabin first.
  */
-export default function CabinActions({ initiallyOpen = false, ...panelProps }: Props) {
-  const [open, setOpen] = useState(initiallyOpen);
+export default function CabinActions(panelProps: Props) {
+  const [open, setOpen] = useState(false);
   const [summary, setSummary] = useState<PanelSummary | null>(null);
 
   const bar = barState(summary);
@@ -76,11 +79,14 @@ export default function CabinActions({ initiallyOpen = false, ...panelProps }: P
         <AvailabilityPanel {...panelProps} onSummaryChange={setSummary} />
       </AvailabilityDrawer>
 
-      <div className="lg:hidden fixed inset-x-0 bottom-tab-bar z-30 bg-night border-t border-wax/10 px-6 pt-4 pb-4">
+      {/* Rounded top corners echo the drawer's own edge, so the bar reads as
+          something that will rise rather than a flat footer. */}
+      <div className="lg:hidden fixed inset-x-0 bottom-tab-bar z-30 bg-night border-t border-wax/10 rounded-t-2xl px-6 pt-4 pb-4">
         {bar.context && (
-          <p className="text-label text-wax-muted mb-3 flex justify-between gap-2">
-            {bar.context}
-          </p>
+          <div className="flex items-center justify-between gap-2 mb-3">
+            <span className="text-label text-wax-muted">{bar.context.dates}</span>
+            <span className="text-label text-wax-muted">{bar.context.status}</span>
+          </div>
         )}
 
         {bar.href ? (

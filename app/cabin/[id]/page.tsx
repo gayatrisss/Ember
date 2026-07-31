@@ -106,7 +106,6 @@ export default async function CabinPage({
             cabinName={name}
             reservationUrl={cabin.reservation_url}
             initialMonths={initialMonths}
-            initiallyOpen={!!checkIn && !!checkOut}
           />
         </div>
 
