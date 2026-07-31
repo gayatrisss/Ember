@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useReducer, useRef, useMemo } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
+import Link from "next/link";
 import { BookingPanel } from "@/components/ui/booking-panel";
 import { CalendarInputV2 } from "@/components/ui/calendar-input-v2";
 import { ToggleOptions } from "@/components/ui/toggle-options";
@@ -58,6 +59,15 @@ function availReducer(_: AvailState, action: AvailAction): AvailState {
   }
 }
 
+// The calendar's date-key format, shared by the alert-wash set and the overlap
+// test so the two can't drift.
+function toAlertKey(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}T00:00:00Z`;
+}
+
 function fmtRange(a: Date | null, b: Date | null): string {
   if (!a || !b) return "—";
   const opts: Intl.DateTimeFormatOptions = { month: "short", day: "numeric" };
@@ -72,6 +82,25 @@ function SummaryRow({ label, value }: { label: string; value: string }) {
       <span className="text-data uppercase text-wax/40">{label}</span>
       <span className="text-label text-wax">{value}</span>
     </div>
+  );
+}
+
+// Shown when the chosen range already sits inside one of the user's alerts.
+// Routes to /my-alerts rather than offering an inline edit — this panel creates
+// alerts, it doesn't manage them.
+//
+// Styled as a status line, not an error: nothing failed, the user simply already
+// did this. It takes the same treatment as the "This cabin is booked for…" line
+// it replaces, with only the link carrying emphasis. Ember is reserved for
+// success in this system (see Toast), and red for genuine failures.
+function OverlapNotice() {
+  return (
+    <p className="text-label text-wax/60 text-center mb-4">
+      You&apos;re already watching this cabin for those dates.{" "}
+      <Link href="/my-alerts" className="text-wax underline hover:text-ember transition-colors">
+        Manage your alerts.
+      </Link>
+    </p>
   );
 }
 
@@ -286,15 +315,29 @@ export function AvailabilityPanel({
       const cur = new Date(`${a.date_from.slice(0, 10)}T00:00:00`);
       const end = new Date(`${a.date_to.slice(0, 10)}T00:00:00`);
       while (cur <= end) {
-        const y = cur.getFullYear();
-        const m = String(cur.getMonth() + 1).padStart(2, "0");
-        const d = String(cur.getDate()).padStart(2, "0");
-        set.add(`${y}-${m}-${d}T00:00:00Z`);
+        set.add(toAlertKey(cur));
         cur.setDate(cur.getDate() + 1);
       }
     }
     return set;
   }, [alerts]);
+
+  // Does the chosen range touch an alert the user already has? Mirrors the DB's
+  // exclusion constraint, which rejects ANY overlap rather than exact duplicates
+  // — so the UI can block what the server would 409 on, before the form is filled
+  // rather than after.
+  const rangeOverlapsAlert = useMemo(() => {
+    if (!checkIn || !checkOut) return false;
+    const cur = new Date(checkIn);
+    cur.setHours(0, 0, 0, 0);
+    const end = new Date(checkOut);
+    end.setHours(0, 0, 0, 0);
+    while (cur <= end) {
+      if (alertedDates.has(toAlertKey(cur))) return true;
+      cur.setDate(cur.getDate() + 1);
+    }
+    return false;
+  }, [checkIn, checkOut, alertedDates]);
 
   // Clean up the URL params once state has been restored from the OAuth redirect.
   useEffect(() => {
@@ -484,10 +527,19 @@ export function AvailabilityPanel({
     if (avail.status === "booked")
       return (
         <>
-          <p className="text-label text-wax/60 text-center mb-4">
-            This cabin is booked for {fmtRange(checkIn, checkOut)}.
-          </p>
-          <CtaButton onClick={() => handleSetupAlert("alert-setup")}>Set up an alert →</CtaButton>
+          {rangeOverlapsAlert ? (
+            <OverlapNotice />
+          ) : (
+            <p className="text-label text-wax/60 text-center mb-4">
+              This cabin is booked for {fmtRange(checkIn, checkOut)}.
+            </p>
+          )}
+          <CtaButton
+            onClick={() => handleSetupAlert("alert-setup")}
+            disabled={rangeOverlapsAlert}
+          >
+            Set up an alert →
+          </CtaButton>
         </>
       );
     if (avail.status === "not-open")
@@ -560,10 +612,16 @@ export function AvailabilityPanel({
       );
       cta = (
         <>
+          {/* Reachable with an overlapping range via the OAuth round-trip, which
+              restores this view straight from URL params. */}
+          {rangeOverlapsAlert && <OverlapNotice />}
           {submitError && (
-            <p className="text-label text-ember text-center mb-3">{submitError}</p>
+            <p className="text-label text-red-300 text-center mb-3">{submitError}</p>
           )}
-          <CtaButton onClick={() => handleConfirm("cancellation")} disabled={submitting}>
+          <CtaButton
+            onClick={() => handleConfirm("cancellation")}
+            disabled={submitting || rangeOverlapsAlert}
+          >
             {submitting ? "Confirming..." : "Confirm alert"}
           </CtaButton>
         </>
@@ -595,7 +653,7 @@ export function AvailabilityPanel({
       cta = (
         <>
           {submitError && (
-            <p className="text-label text-ember text-center mb-3">{submitError}</p>
+            <p className="text-label text-red-300 text-center mb-3">{submitError}</p>
           )}
           <CtaButton onClick={() => handleConfirm("reminder")} disabled={submitting}>
             {submitting ? "Confirming..." : "Confirm reminder"}

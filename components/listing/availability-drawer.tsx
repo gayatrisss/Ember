@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { X } from "lucide-react";
+import { useScrollLock } from "@/components/ui/use-scroll-lock";
 
 const DISMISS_THRESHOLD = 80; // downward drag before the sheet closes or collapses
 const EXPAND_THRESHOLD = 32; // upward drag before it snaps to full height
@@ -30,6 +31,11 @@ export default function AvailabilityDrawer({ open, onOpenChange, children }: Pro
   const dragY = useRef(0);
   const pushedEntry = useRef(false);
   const [expanded, setExpanded] = useState(false);
+
+  // Freeze the cabin page while the drawer is up. Safe at every breakpoint: the
+  // docked bar is the only thing that opens the drawer and it's hidden at lg, so
+  // `open` is never true on desktop.
+  useScrollLock(open);
 
   // The two resting insets, read from the tokens so the drag can't drift from CSS.
   function insets() {

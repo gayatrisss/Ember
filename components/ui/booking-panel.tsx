@@ -14,7 +14,9 @@ export function BookingPanel({ title, children, cta }: BookingPanelProps) {
       {title && (
         <p className="text-data uppercase tracking-widest text-ember shrink-0">{title}</p>
       )}
-      <div className="mt-grouped lg:mt-12 flex-1 min-h-0 overflow-y-auto lg:overflow-y-visible">
+      {/* overscroll-contain stops a flick at the end of this list from chaining
+          into the page behind the drawer. */}
+      <div className="mt-grouped lg:mt-12 flex-1 min-h-0 overflow-y-auto overscroll-contain lg:overflow-y-visible">
         {children}
       </div>
       {cta != null && (
