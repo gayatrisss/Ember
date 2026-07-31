@@ -15,7 +15,9 @@ function FieldNoteItem({
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center gap-1.5 text-smoke">
-        <Icon size={12} strokeWidth={1.5} />
+        {/* Icons are desktop-only: at 2-up on a phone the label carries it, and
+            the glyphs cost width the values need. */}
+        <Icon size={12} strokeWidth={1.5} className="hidden lg:block" />
         <span className="text-data uppercase tracking-widest">{label}</span>
       </div>
       <span className="text-heading text-wax">{value}</span>
@@ -45,9 +47,9 @@ export default function FieldNotes({ cabin }: { cabin: Cabin }) {
   if (notes.length === 0) return null;
 
   return (
-    <section className="mt-10 lg:mt-12">
-      <p className="text-data uppercase tracking-widest text-smoke mb-6">Field Notes</p>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+    <section className="mt-section lg:mt-12">
+      <p className="text-data uppercase tracking-widest text-smoke mb-grouped lg:mb-6">Field Notes</p>
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-grouped lg:gap-8">
         {notes.map(({ label, value }) => (
           <FieldNoteItem key={label} icon={NOTE_ICONS[label]} label={label} value={value} />
         ))}

@@ -26,6 +26,17 @@ import {
 type View = "calendar" | "alert-setup" | "reminder-setup" | "confirmed";
 
 type AvailState = { loading: boolean; error: boolean; status: AvailabilityStatus | null };
+
+/**
+ * What the panel tells its container about the current lookup. The mobile docked
+ * bar needs this to label itself while the drawer is shut; desktop ignores it.
+ */
+export type PanelSummary = AvailState & {
+  /** Formatted range, or null until both dates are chosen. */
+  dateRange: string | null;
+  /** Recreation.gov link, so the container can hand off directly when available. */
+  bookUrl: string;
+};
 type AvailAction =
   | { type: "loading" }
   | { type: "success"; status: AvailabilityStatus }
@@ -196,6 +207,7 @@ export function AvailabilityPanel({
   cabinName,
   reservationUrl,
   initialMonths,
+  onSummaryChange,
 }: {
   facilityId: string;
   cabinName: string;
@@ -204,6 +216,8 @@ export function AvailabilityPanel({
   // Month cache seeded by the server (keyed "YYYY-MM") covering the panel's
   // initial view, so the first paint has data and skips the loading state.
   initialMonths?: Record<string, unknown>;
+  /** Must be referentially stable (a setState fn or useCallback) — it's an effect dep. */
+  onSummaryChange?: (summary: PanelSummary) => void;
 }) {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -479,6 +493,20 @@ export function AvailabilityPanel({
   };
 
   const dateRange = fmtRange(checkIn, checkOut);
+
+  // Report upward so the mobile docked bar can label itself without duplicating
+  // the availability lookup. No-op on desktop, where nothing passes the callback.
+  const bookUrl = recGovUrl(facilityId, reservationUrl);
+  useEffect(() => {
+    onSummaryChange?.({
+      dateRange: checkIn && checkOut ? fmtRange(checkIn, checkOut) : null,
+      loading: avail.loading,
+      error: avail.error,
+      status: avail.status,
+      bookUrl,
+    });
+  }, [checkIn, checkOut, avail, bookUrl, onSummaryChange]);
+
   const windowNights =
     checkIn && checkOut ? Math.round((checkOut.getTime() - checkIn.getTime()) / 86_400_000) : 0;
   // Default the minimum to the whole window (strict-equivalent); clamp any prior

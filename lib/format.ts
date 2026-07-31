@@ -1,15 +1,95 @@
 export const CONF_THRESHOLD = 0.8
 
-// Title-cases the name, preserves 2-letter state codes in parens: "(MT)" not "(Mt)"
-export function formatFacilityName(name: string): string {
-  return name
-    .toLowerCase()
-    .replace(/\b\w/g, (c) => c.toUpperCase())
-    .replace(/\(([A-Za-z]{2})\)/g, (_, code) => `(${code.toUpperCase()})`)
+// rec.gov stores facility names in whatever case the ranger district typed them:
+// "TRAIL CREEK CABIN", "Fure's Cabin", "MCCART LOOKOUT". Everything below turns that
+// into one display convention — title case — so the name reads the same everywhere.
+
+// Lowercased inside a title, never at the start or the end of the name.
+const MINOR_WORDS = new Set([
+  "a", "an", "and", "at", "but", "by", "for", "in", "nor", "of", "on", "or", "the", "to", "vs",
+])
+
+// Stay all-caps: agency and facility abbreviations that a title-caser would ruin.
+// "Mt."/"Mtn." are deliberately absent — those are abbreviations, not acronyms.
+const ACRONYMS = new Set(["nf", "nfs", "usfs", "blm", "nwr", "nra", "np", "us", "usa", "rv", "atv"])
+
+// prettier-ignore
+const STATE_CODES = new Set([
+  "al", "ak", "az", "ar", "ca", "co", "ct", "de", "fl", "ga", "hi", "id", "il", "in", "ia", "ks",
+  "ky", "la", "me", "md", "ma", "mi", "mn", "ms", "mo", "mt", "ne", "nv", "nh", "nj", "nm", "ny",
+  "nc", "nd", "oh", "ok", "or", "pa", "ri", "sc", "sd", "tn", "tx", "ut", "vt", "va", "wa", "wv",
+  "wi", "wy", "dc", "pr",
+])
+
+// Whitespace-delimited token, and the segments inside it: a hyphen or slash starts a new
+// word for casing purposes, so "a-frame" gets both halves cased.
+const TOKEN = /\S+/g
+const SEGMENT = /[^\-/]+/g
+
+// Strips punctuation so "(mt)" and "or," can be matched against the sets above.
+function bareWord(word: string): string {
+  return word.replace(/[^\p{L}\p{N}]/gu, "")
 }
 
+// Capitalise the letters of one segment. The segment may carry punctuation ("cabin.",
+// "(west)") and may contain an apostrophe, which is where the rule earns its keep:
+// "tom's" must not become "Tom'S" and "mestaa’ėhehe" must be left alone, but "o'brien"
+// must become "O'Brien". So a run after an apostrophe is only capitalised when the run
+// before it was a single letter — the Irish/French prefix shape.
+function capitalise(segment: string): string {
+  let previousRun: string | null = null
+  return segment.replace(/\p{L}+/gu, (run) => {
+    const isPrefixed = previousRun !== null && previousRun.length > 1
+    previousRun = run
+    if (isPrefixed) return run
+    return run[0].toUpperCase() + run.slice(1)
+  })
+}
+
+function caseSegment(segment: string): string {
+  const bare = bareWord(segment)
+  if (ACRONYMS.has(bare)) return segment.replace(bare, bare.toUpperCase())
+  // Scottish/Irish prefixes: rec.gov shouts these, so the inner capital is lost.
+  // The length guard handles "mcgee" while leaving "mac" and "machine" alone.
+  if (/^mc\p{L}{2,}/u.test(bare)) {
+    return capitalise(segment).replace(/^Mc(\p{L})/u, (_, c: string) => `Mc${c.toUpperCase()}`)
+  }
+  return capitalise(segment)
+}
+
+/**
+ * Canonical display form for a cabin name. Use this at every point a cabin name is
+ * rendered — heading, card, alert summary, email, alt text. It is idempotent, so it is
+ * safe to call on a name that was already formatted upstream.
+ *
+ *   "TRAIL CREEK CABIN"                  → "Trail Creek Cabin"
+ *   "LAKE OF THE WOODS LOOKOUT"          → "Lake of the Woods Lookout"
+ *   "MCCART LOOKOUT"                     → "McCart Lookout"
+ *   "TOM'S LAKE CABIN"                   → "Tom's Lake Cabin"
+ *   "Cold Springs Cabin - Ochoco NF (or)" → "Cold Springs Cabin - Ochoco NF (OR)"
+ */
 export function formatCabinName(name: string): string {
-  return formatFacilityName(name)
+  const lowered = name.trim().toLowerCase()
+  const tokens = lowered.match(TOKEN) ?? []
+
+  const titled = tokens.map((token, i) => {
+    // Minor words are judged whole-token, so the "a" in "a-frame" is not one.
+    const isEdge = i === 0 || i === tokens.length - 1
+    if (!isEdge && MINOR_WORDS.has(bareWord(token))) return token
+    return token.replace(SEGMENT, caseSegment)
+  })
+
+  // State codes only get shouted at the tail of a parenthetical — "(MT)",
+  // "(Beaverhead-Deerlodge National Forest, MT)" — so a bare "or"/"in" elsewhere in a
+  // parenthetical phrase stays a word. The leading group keeps the "ma" ending
+  // "(Alabama)" from being read as a state code.
+  return titled.join(" ").replace(
+    /(^|[^\p{L}])(\p{L}{2})(\s*\))/gu,
+    (match, lead: string, code: string, tail: string) => {
+      if (!STATE_CODES.has(code.toLowerCase())) return match
+      return lead + code.toUpperCase() + tail
+    }
+  )
 }
 
 export function formatDateRange(from: string, to: string): string {

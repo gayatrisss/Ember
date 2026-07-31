@@ -20,9 +20,11 @@ export default function StatusBar({ facilityId, reservationUrl }: StatusBarProps
           href={recGovUrl}
           target={facilityId ? "_blank" : undefined}
           rel={facilityId ? "noopener noreferrer" : undefined}
-          className="text-label text-wax hover:text-ember transition-colors"
+          className="text-label text-wax hover:text-ember transition-colors underline lg:no-underline shrink-0"
         >
-          view full details on Recreation.gov ↗
+          {/* Shortened below lg so the row stays on one line at 353px. */}
+          <span className="lg:hidden">Recreation.gov ↗</span>
+          <span className="hidden lg:inline">view full details on Recreation.gov ↗</span>
         </a>
       </div>
     </div>

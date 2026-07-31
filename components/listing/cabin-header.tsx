@@ -1,9 +1,7 @@
-import { formatFacilityName } from "@/lib/format";
 import type { Cabin } from "@/types/cabin";
 
-export default function CabinHeader({ cabin }: { cabin: Cabin }) {
-  const name = formatFacilityName(cabin.facility_name);
-
+/** `name` is the display form from formatCabinName — the page formats once and shares it. */
+export default function CabinHeader({ cabin, name }: { cabin: Cabin; name: string }) {
   return (
     <div className="flex flex-col gap-4">
       {cabin.rec_area_name && (

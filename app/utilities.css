@@ -297,10 +297,17 @@
     padding-bottom: max(12px, env(safe-area-inset-bottom));
   }
 
-  /* Clears the fixed tab bar so page content (and the footer) never sits under it.
-     70px of bar (24px icon + 4px gap + 18px label + 24px padding) + safe area. */
+  /* Clears the fixed tab bar so page content (and the footer) never sits under it. */
   .pb-tab-bar {
-    padding-bottom: calc(70px + max(12px, env(safe-area-inset-bottom)));
+    padding-bottom: var(--spacing-tab-bar);
+    @media (min-width: 1024px) {
+      padding-bottom: 0;
+    }
+  }
+
+  /* Cabin page: clears the tab bar AND the docked availability bar above it. */
+  .pb-cabin-actions {
+    padding-bottom: calc(var(--spacing-tab-bar) + var(--spacing-docked-bar));
     @media (min-width: 1024px) {
       padding-bottom: 0;
     }

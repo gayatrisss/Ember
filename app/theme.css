@@ -9,17 +9,21 @@
   --color-night: #0f1510;
   --color-evergreen: #1a241b;
   --color-ember: #d45a20;
-  --color-ember-selected: #b24c1b;  /* 80% brightness — confirmed calendar selection */
-  --color-ember-range: #803913;     /* 50% brightness — in-range fill and hover bg */
-  --color-ember-40: #66371f;        /* 40% brightness — Select menu row dividers */
-  --color-ember-bright: #e56123;    /* light-mode calendar hover border */
+  --color-ember-selected: #b24c1b; /* 80% brightness — confirmed calendar selection */
+  --color-ember-range: #803913; /* 50% brightness — in-range fill and hover bg */
+  --color-ember-40: #66371f; /* 40% brightness — Select menu row dividers */
+  --color-ember-bright: #e56123; /* light-mode calendar hover border */
   --color-smoke: #5f7a8a;
   --color-wax: #ede8dc;
   --color-wax-muted: #b2afa6;
-  --color-ash: #171a17;          /* Expanded alert card header strip surface */
-  --color-slate: #6d736e;        /* Muted text/icons on light (wax) surfaces — e.g. nav search */
-  --color-smoke-deep: #35444d;   /* Info toast surface (smoke at 30% brightness) */
-  --color-placeholder: color-mix(in oklch, var(--color-wax) 40%, transparent);  /* Empty field / input placeholder text — single source for all fields */
+  --color-ash: #171a17; /* Expanded alert card header strip surface */
+  --color-slate: #6d736e; /* Muted text/icons on light (wax) surfaces — e.g. nav search */
+  --color-smoke-deep: #35444d; /* Info toast surface (smoke at 30% brightness) */
+  --color-placeholder: color-mix(
+    in oklch,
+    var(--color-wax) 40%,
+    transparent
+  ); /* Empty field / input placeholder text — single source for all fields */
 
   /* === Typography === */
   --font-display: var(--font-fraunces);
@@ -27,8 +31,8 @@
   --font-mono: var(--font-geist-mono);
 
   /* === Breakpoints === */
-  --breakpoint-sm: 500px;   /* mobile — covers modern phones in portrait */
-  --breakpoint-xl: 1440px;  /* large monitor — above our 1280px content max */
+  --breakpoint-sm: 500px; /* mobile — covers modern phones in portrait */
+  --breakpoint-xl: 1440px; /* large monitor — above our 1280px content max */
 
   /* === Vertical rhythm ===
    * Mirrors the Ember/Spacing collection in Figma (Mobile / Desktop modes). Four
@@ -38,25 +42,33 @@
    * The -lg tokens are the Desktop mode; `grouped` is deliberately the same at
    * both breakpoints, so it has no -lg variant.
    */
-  --spacing-bonded: 16px;      /* headline ↔ subcopy, label ↔ its content */
+  --spacing-bonded: 16px; /* headline ↔ subcopy, label ↔ its content */
   --spacing-bonded-lg: 32px;
-  --spacing-grouped: 24px;     /* field ↔ field, step ↔ step */
-  --spacing-section: 80px;     /* blocks within a section, minor section breaks */
+  --spacing-grouped: 24px; /* field ↔ field, step ↔ step */
+  --spacing-section: 80px; /* blocks within a section, minor section breaks */
   --spacing-section-lg: 96px;
-  --spacing-major: 200px;      /* major page section breaks */
+  --spacing-major: 200px; /* major page section breaks */
   --spacing-major-lg: 256px;
+
+  /* === Mobile chrome ===
+   * Heights of the fixed furniture, as spacing tokens so they can be used for
+   * both positioning (bottom-tab-bar) and clearance (padding).
+   */
+  --spacing-tab-bar: calc(69px + max(12px, env(safe-area-inset-bottom)));
+  --spacing-docked-bar: 112px; /* cabin action bar at its tallest: context line + 48 button + padding */
+  --spacing-drawer-top: 120px; /* strip of page left visible above the drawer */
 
   /* === Layout (px) — not on the default Tailwind scale === */
   --spacing-gutter: 120px;
   --width-copy: 280px;
   --width-copy-wide: 300px;
   --width-sidebar: 440px;
-  --container-nav-search: 600px;   /* max-width of the centered nav search bar */
-  --container-toast: 582px;        /* max-width of a toast */
+  --container-nav-search: 600px; /* max-width of the centered nav search bar */
+  --container-toast: 582px; /* max-width of a toast */
   --width-alert-thumb: 106px;
   --height-alert-thumb: 71px;
-  --width-opening-card: 300px;     /* min-width of an opening window in the notification carousel */
-  --height-alert-header: 46px;   /* Expanded alert card header strip */
+  --width-opening-card: 300px; /* min-width of an opening window in the notification carousel */
+  --height-alert-header: 46px; /* Expanded alert card header strip */
   --spacing-section-content: 46px;
 
   /* === Shadows === */
@@ -73,6 +85,10 @@
     radial-gradient(ellipse at 105% 108%, rgb(212 90 32 / 0.4) 0%, transparent 55%);
 
   /* Lit activity card (OPEN state): warm ember glow up top fading to evergreen */
-  --background-image-card-open:
-    linear-gradient(to bottom, rgb(73 50 28 / 0.41) 0%, rgb(49 43 28 / 0.71) 27.885%, var(--color-evergreen) 84.615%);
+  --background-image-card-open: linear-gradient(
+    to bottom,
+    rgb(73 50 28 / 0.41) 0%,
+    rgb(49 43 28 / 0.71) 27.885%,
+    var(--color-evergreen) 84.615%
+  );
 }
