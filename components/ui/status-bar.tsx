@@ -1,3 +1,4 @@
+import { ArrowUpRight } from "lucide-react";
 import { recGovUrl as buildRecGovUrl } from "@/lib/recgov";
 
 type StatusBarProps = {
@@ -20,11 +21,12 @@ export default function StatusBar({ facilityId, reservationUrl }: StatusBarProps
           href={recGovUrl}
           target={facilityId ? "_blank" : undefined}
           rel={facilityId ? "noopener noreferrer" : undefined}
-          className="text-label text-wax hover:text-ember transition-colors underline lg:no-underline shrink-0"
+          className="text-label text-wax hover:text-ember transition-colors underline lg:no-underline shrink-0 inline-flex items-center gap-1"
         >
           {/* Shortened below lg so the row stays on one line at 353px. */}
-          <span className="lg:hidden">Recreation.gov ↗</span>
-          <span className="hidden lg:inline">view full details on Recreation.gov ↗</span>
+          <span className="lg:hidden">Recreation.gov</span>
+          <span className="hidden lg:inline">view full details on Recreation.gov</span>
+          <ArrowUpRight size={16} className="shrink-0" aria-hidden="true" />
         </a>
       </div>
     </div>

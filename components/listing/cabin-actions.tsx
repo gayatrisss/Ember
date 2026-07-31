@@ -1,11 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import { ArrowRight, ArrowUpRight } from "lucide-react";
 import { AvailabilityPanel, type PanelSummary } from "@/components/ui/availability-panel";
 import AvailabilityDrawer from "./availability-drawer";
 
+// Arrows are lucide glyphs rather than "→": Geist has no U+2192, so iOS falls
+// through the font stack to Apple Color Emoji and renders a colour arrow.
 type BarState = {
-  label: string;
+  label: React.ReactNode;
   /** Dates left, status right. Absent only before a range is chosen. */
   context: { dates: string; status: string } | null;
   variant: "primary" | "disabled" | "secondary";
@@ -28,17 +31,25 @@ function barState(summary: PanelSummary | null): BarState {
   }
   if (summary.status === "available") {
     return {
-      label: "Book on Recreation.gov →",
+      label: <>Book on Recreation.gov <ArrowUpRight size={16} aria-hidden="true" /></>,
       context: { dates, status: "Available" },
       variant: "primary",
       href: summary.bookUrl,
     };
   }
   if (summary.status === "booked") {
-    return { label: "Set up an alert →", context: { dates, status: "Booked" }, variant: "primary" };
+    return {
+      label: <>Set up an alert <ArrowRight size={16} aria-hidden="true" /></>,
+      context: { dates, status: "Booked" },
+      variant: "primary",
+    };
   }
   if (summary.status === "not-open") {
-    return { label: "Set a reminder →", context: { dates, status: "Not yet open" }, variant: "primary" };
+    return {
+      label: <>Set a reminder <ArrowRight size={16} aria-hidden="true" /></>,
+      context: { dates, status: "Not yet open" },
+      variant: "primary",
+    };
   }
   return { label: "Check availability", context: { dates, status: "" }, variant: "primary" };
 }
@@ -71,7 +82,7 @@ export default function CabinActions(panelProps: Props) {
   const [summary, setSummary] = useState<PanelSummary | null>(null);
 
   const bar = barState(summary);
-  const classes = `w-full h-12 rounded-lg text-button grid place-items-center transition-colors ${VARIANT_CLASSES[bar.variant]}`;
+  const classes = `w-full h-12 rounded-lg text-button flex items-center justify-center gap-2 transition-colors ${VARIANT_CLASSES[bar.variant]}`;
 
   return (
     <>

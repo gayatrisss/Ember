@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { ArrowUpRight } from "lucide-react";
 import type { CabinFeatureProps } from "@/lib/cabins";
 
 /**
@@ -102,9 +103,10 @@ export function ExploreCard({ seed }: Props) {
           href={seed.recGovUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="relative z-10 text-label text-center text-smoke transition-colors hover:text-wax"
+          className="relative z-10 inline-flex items-center justify-center gap-1 text-label text-center text-smoke transition-colors hover:text-wax"
         >
-          Full details on Recreation.gov ↗
+          Full details on Recreation.gov
+          <ArrowUpRight size={16} className="shrink-0" aria-hidden="true" />
         </a>
       </div>
     </div>

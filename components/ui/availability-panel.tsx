@@ -8,7 +8,7 @@ import { CalendarInputV2 } from "@/components/ui/calendar-input-v2";
 import { ToggleOptions } from "@/components/ui/toggle-options";
 import { Select } from "@/components/ui/select";
 import { Spinner } from "@/components/ui/spinner";
-import { Info, Send } from "lucide-react";
+import { ArrowRight, ArrowUpRight, Info, Send } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { recGovUrl } from "@/lib/recgov";
 import { useToast } from "@/components/ui/toast-provider";
@@ -115,8 +115,11 @@ function CtaButton({
   disabled?: boolean;
   children: React.ReactNode;
 }) {
+  // flex rather than block so the trailing arrow icon can sit beside the label.
+  // Arrows are lucide glyphs, not "→": Geist has no U+2192, so iOS falls through
+  // the stack to Apple Color Emoji and renders a colour arrow.
   const cls =
-    "block w-full bg-ember text-wax text-body px-6 py-3 rounded-lg hover:brightness-110 text-center disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:brightness-100";
+    "flex w-full items-center justify-center gap-2 bg-ember text-wax text-body px-6 py-3 rounded-lg hover:brightness-110 text-center disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:brightness-100";
   if (href) {
     return (
       <a href={href} target="_blank" rel="noopener noreferrer" className={cls}>
@@ -520,7 +523,8 @@ export function AvailabilityPanel({
             These dates are available to book!
           </p>
           <CtaButton href={recGovUrl(facilityId, reservationUrl)}>
-            Book on Recreation.gov →
+            Book on Recreation.gov
+            <ArrowUpRight size={16} aria-hidden="true" />
           </CtaButton>
         </>
       );
@@ -538,7 +542,8 @@ export function AvailabilityPanel({
             onClick={() => handleSetupAlert("alert-setup")}
             disabled={rangeOverlapsAlert}
           >
-            Set up an alert →
+            Set up an alert
+            <ArrowRight size={16} aria-hidden="true" />
           </CtaButton>
         </>
       );
@@ -548,7 +553,10 @@ export function AvailabilityPanel({
           <p className="text-label text-wax/60 text-center mb-4 leading-relaxed">
             Booking isn&apos;t open yet for these dates.
           </p>
-          <CtaButton onClick={() => handleSetupAlert("reminder-setup")}>Set a reminder →</CtaButton>
+          <CtaButton onClick={() => handleSetupAlert("reminder-setup")}>
+            Set a reminder
+            <ArrowRight size={16} aria-hidden="true" />
+          </CtaButton>
         </>
       );
     return null;
