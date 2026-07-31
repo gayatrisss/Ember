@@ -17,7 +17,7 @@
 
 export type DateCellAvailability = "past" | "booked" | "open";
 export type DateCellSelection = "none" | "selected" | "range" | "hover";
-export type DateCellVariant = "date" | "day-label" | "empty";
+export type DateCellVariant = "date" | "day-label" | "empty" | "skeleton";
 export type DateCellPosition = "single" | "start" | "end" | "middle";
 export type DateCellTheme = "dark" | "light";
 
@@ -133,6 +133,19 @@ export function DateCellV2({
   // Out-of-month padding — occupies the grid slot, shows nothing.
   if (variant === "empty") {
     return <div className={`${BASE} border-transparent`} aria-hidden="true" />;
+  }
+
+  // Loading placeholder. Lives here rather than in the calendar so the skeleton
+  // can never drift from the real cell's footprint. Deliberately neutral rather
+  // than ember — a skeleton is plumbing, and the ember glow is reserved for the
+  // moments that actually mean something.
+  if (variant === "skeleton") {
+    const wash = theme === "light" ? "bg-night/10" : "bg-wax/10";
+    return (
+      <div className={`${BASE} border-transparent`} aria-hidden="true">
+        <div className={`size-8 rounded-md ${wash} animate-pulse`} />
+      </div>
+    );
   }
 
   // Mo/Tu/We… header labels, non-interactive.

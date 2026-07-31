@@ -9,7 +9,8 @@ import { useEffect, useLayoutEffect, useState, type RefObject } from "react";
  * first frame the user sees is already correct. It doesn't exist during SSR, so
  * fall back to useEffect on the server to avoid React's warning.
  */
-const useIsomorphicLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
+export const useIsomorphicLayoutEffect =
+  typeof window === "undefined" ? useEffect : useLayoutEffect;
 
 const GAP = 12; // breathing room between the popover and adjacent chrome
 const MIN_HEIGHT = 120; // never cap a scrollable popover below this

@@ -648,6 +648,34 @@ export default function DesignPage() {
             />
           </div>
         </div>
+
+        {/* Loading state — swaps the 42-cell grid for skeletons while a month's
+            availability is in flight. Header and day labels stay put, so the
+            calendar never changes height between states. */}
+        <p className="text-label text-smoke mt-10 mb-4">Loading (fetching availability)</p>
+        <div className="flex flex-wrap gap-6">
+          <div className="bg-evergreen rounded-xl p-6 w-fit">
+            <CalendarInputV2
+              loading
+              checkIn={null}
+              checkOut={null}
+              onChange={() => {}}
+              initialMonth={V2_MONTH}
+              initialYear={V2_YEAR}
+            />
+          </div>
+          <div className="bg-wax rounded-xl p-6 w-fit">
+            <CalendarInputV2
+              loading
+              theme="light"
+              checkIn={null}
+              checkOut={null}
+              onChange={() => {}}
+              initialMonth={V2_MONTH}
+              initialYear={V2_YEAR}
+            />
+          </div>
+        </div>
       </section>
 
       {/* ConfirmationAnimations */}

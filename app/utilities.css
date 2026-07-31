@@ -292,6 +292,18 @@
     }
   }
 
+  /* === Availability drawer ===
+   * Rest vs expanded is a change of `top` only, never a transform: the sheet's
+   * bottom stays pinned to the tab bar so the CTA can't slide underneath it.
+   * Transform is reserved for dismissal, where the whole sheet does leave.
+   */
+  .drawer-hidden {
+    transform: translateY(100%);
+    @media (min-width: 1024px) {
+      transform: none;
+    }
+  }
+
   /* Fixed mobile tab bar: sits above the iOS home indicator. */
   .pb-safe {
     padding-bottom: max(12px, env(safe-area-inset-bottom));

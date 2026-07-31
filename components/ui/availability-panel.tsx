@@ -412,7 +412,17 @@ export function AvailabilityPanel({
   }
 
   // When the calendar navigates to a new month, fetch its data if not cached.
+  // The month the calendar is currently showing, so the grid can render its
+  // skeleton until that month's data lands. Seeded to match the calendar's own
+  // initial month.
+  const [viewedMonth, setViewedMonth] = useState(() => {
+    const d = checkIn ?? new Date();
+    return monthKey(d.getFullYear(), d.getMonth());
+  });
+  const monthLoading = monthCache[viewedMonth] === undefined;
+
   function handleMonthChange(year: number, month: number) {
+    setViewedMonth(monthKey(year, month));
     fetchMonth(year, month);
   }
 
@@ -607,6 +617,7 @@ export function AvailabilityPanel({
           onMonthChange={handleMonthChange}
           initialMonth={checkIn?.getMonth()}
           initialYear={checkIn?.getFullYear()}
+          loading={monthLoading}
         />
       );
       cta = calendarCta();

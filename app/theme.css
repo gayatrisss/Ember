@@ -56,7 +56,8 @@
    */
   --spacing-tab-bar: calc(68px + max(12px, env(safe-area-inset-bottom)));
   --spacing-docked-bar: 112px; /* cabin action bar at its tallest: context line + 48 button + padding */
-  --spacing-drawer-top: 120px; /* strip of page left visible above the drawer */
+  --spacing-drawer-top: 72px; /* page strip above the drawer at rest — also its scrim/tap target */
+  --spacing-drawer-full: 16px; /* page strip when the user has dragged the drawer up */
 
   /* === Layout (px) — not on the default Tailwind scale === */
   --spacing-gutter: 120px;

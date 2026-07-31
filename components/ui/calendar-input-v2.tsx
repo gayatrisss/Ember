@@ -119,6 +119,10 @@ type CalendarInputV2Props = {
   initialYear?: number;
   // Adapts colors to a dark (evergreen) or light (wax) surface. Defaults to dark.
   theme?: DateCellTheme;
+  // Swaps the date grid for a skeleton while availability is being fetched. The
+  // header and day labels stay put, so only the numbers change and the calendar
+  // never changes height.
+  loading?: boolean;
 };
 
 export function CalendarInputV2({
@@ -132,6 +136,7 @@ export function CalendarInputV2({
   initialMonth = new Date().getMonth(),
   initialYear = new Date().getFullYear(),
   theme = "dark",
+  loading = false,
 }: CalendarInputV2Props) {
   const [month, setMonth] = useState(initialMonth);
   const [year, setYear] = useState(initialYear);
@@ -199,9 +204,16 @@ export function CalendarInputV2({
         ))}
       </div>
 
-      {/* Date grid */}
-      <div className="grid grid-cols-7 gap-y-1">
-        {cells.map((date, i) => {
+      {/* Date grid — or its skeleton while availability is in flight. Uses the
+          same 42-cell grid so the swap causes no layout shift. */}
+      <div className="grid grid-cols-7 gap-y-1" aria-busy={loading}>
+        {loading &&
+          Array.from({ length: 42 }, (_, i) => (
+            <DateCellV2 key={`skeleton-${i}`} variant="skeleton" theme={theme} />
+          ))}
+
+        {!loading &&
+          cells.map((date, i) => {
           const inMonth = date.getMonth() === month;
 
           if (!inMonth) {
