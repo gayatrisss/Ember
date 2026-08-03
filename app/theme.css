@@ -52,7 +52,12 @@
 
   /* === Mobile chrome ===
    * Heights of the fixed furniture, as spacing tokens so they can be used for
-   * both positioning (bottom-tab-bar) and clearance (padding).
+   * both positioning (bottom-tab-bar) and clearance (pb-tab-bar).
+   *
+   * Every --spacing-* key generates a full set of utilities. Never hand-write a
+   * class in utilities.css that collides with one: @layer utilities outranks
+   * @layer components, so the generated flat utility silently wins and any
+   * responsive variant baked into the custom class never applies.
    */
   --spacing-tab-bar: calc(68px + max(12px, env(safe-area-inset-bottom)));
   --spacing-docked-bar: 112px; /* cabin action bar at its tallest: context line + 48 button + padding */

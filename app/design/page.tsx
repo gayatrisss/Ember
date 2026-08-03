@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import PageEdges from "@/components/ui/page-edges";
 import { ArrowLeft, ArrowRight, Info, Mail } from "lucide-react";
 import { Field } from "@/components/ui/field";
 import { TextInput } from "@/components/ui/text-input";
@@ -196,6 +197,8 @@ export default function DesignPage() {
 
   return (
     <div className="min-h-screen bg-night">
+      {/* No footer on this page — it ends on night, so both gutters are night. */}
+      <PageEdges bottom="night" />
       {/* Sticky header */}
       <header className="sticky top-0 z-40 border-b border-wax/10 bg-night/95 backdrop-blur-sm">
         <div className="page-container flex items-center justify-between h-14">

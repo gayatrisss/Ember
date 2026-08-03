@@ -1,3 +1,4 @@
+import PageEdges from "@/components/ui/page-edges";
 import { render } from "@react-email/components";
 import { AvailabilityAlert, type AvailabilityAlertProps } from "@/emails/availability-alert";
 import { EmailFrame } from "@/app/emails/email-frame";
@@ -57,6 +58,8 @@ export default async function EmailsPage() {
 
   return (
     <div className="min-h-screen bg-night">
+      {/* No footer on this page — it ends on night, so both gutters are night. */}
+      <PageEdges bottom="night" />
       <header className="sticky top-0 z-40 border-b border-wax/10 bg-night/95 backdrop-blur-sm">
         <div className="page-container flex items-center justify-between h-14">
           <span className="text-display-fraunces-sm text-ember">Ember</span>

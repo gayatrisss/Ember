@@ -9,7 +9,7 @@ const supabase = createClient();
 
 // Mobile-only bottom navigation. Below lg the top nav is hidden entirely, so this
 // carries everything it used to: the section links and the auth action. Fixed, with
-// page content padded by .pb-tab-bar so nothing ever sits underneath it.
+// page content padded by `pb-tab-bar lg:pb-0` so nothing ever sits underneath it.
 export default function MobileTabBar({ email }: { email: string | null }) {
   const pathname = usePathname();
   const router = useRouter();

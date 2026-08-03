@@ -6,11 +6,59 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/*
+ * === Overscroll gutters ===
+ *
+ * The rubber-band gutters at either end of the document are painted by the
+ * canvas, which takes exactly one background: html's, or body's propagated up
+ * when html has none. One canvas cannot serve two differently-coloured ends, so
+ * the ends are split: the bottom gutter comes from the canvas, and the top gutter
+ * from a cap element offset above body.
+ *
+ * The asymmetry is deliberate — overflow above the top edge is never scrollable,
+ * but a matching ::after below the bottom edge would add a real 100vh of dead
+ * scroll. Only the top can use a pseudo-element.
+ *
+ * Pages declare their two end colours with <PageEdges /> (components/ui). Every
+ * value that component accepts needs a rule below; do not widen its unions
+ * without adding one.
+ *
+ * Note the gutters follow the *document's* ends, not whatever is visually at the
+ * screen edge. Fixed chrome (the mobile tab bar) is not the bottom edge: it lifts
+ * with the page during a bounce and exposes the gutter as page territory.
+ */
+html {
+  --edge-top: var(--color-night);
+  --edge-bottom: var(--color-wax);
+  background: var(--edge-bottom);
+}
+
+html:has([data-page-top="evergreen"]) {
+  --edge-top: var(--color-evergreen);
+}
+
+html:has([data-page-bottom="night"]) {
+  --edge-bottom: var(--color-night);
+}
+
 body {
   background: var(--color-night);
   color: var(--color-wax);
   font-family: var(--font-sans);
   line-height: 1.7;
+  /* Containing block for the cap, and cover the viewport on short pages so the
+     canvas colour can't show through beneath the content. */
+  position: relative;
+  min-height: 100dvh;
+}
+
+body::before {
+  content: "";
+  position: absolute;
+  inset: -100vh 0 auto 0;
+  height: 100vh;
+  background: var(--edge-top);
+  pointer-events: none;
 }
 
 @theme inline {

@@ -5,6 +5,7 @@ import LatelyOnEmber from "@/components/landing/lately-on-ember";
 import HowItWorks from "@/components/landing/how-it-works";
 import Footer from "@/components/landing/footer";
 import MobileTabBar from "@/components/landing/mobile-tab-bar";
+import PageEdges from "@/components/ui/page-edges";
 
 export default async function Home() {
   const supabase = await createClient();
@@ -16,16 +17,15 @@ export default async function Home() {
   const name = user?.user_metadata?.full_name ?? null;
 
   return (
-    // pb-tab-bar keeps the footer clear of the fixed mobile tab bar; it collapses
-    // to zero at lg where the tab bar isn't rendered.
-    <div className="pb-tab-bar">
+    <div>
+      <PageEdges top="evergreen" />
       <div className="bg-evergreen bg-page-glow">
         <TopNav email={email} name={name} />
         <Hero />
         <LatelyOnEmber />
         <HowItWorks />
       </div>
-      <Footer />
+      <Footer clearance="tab-bar" />
       <MobileTabBar email={email} />
     </div>
   );

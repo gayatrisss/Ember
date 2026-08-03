@@ -1,3 +1,4 @@
+import PageEdges from "@/components/ui/page-edges";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
@@ -62,9 +63,8 @@ export default async function CabinPage({
   const access = confident(cabin.road_access, cabin.road_access_conf);
 
   return (
-    // Clearance for the fixed bars lives here, not on <main> — the footer sits
-    // outside main, so padding there left it underneath them.
-    <div className="min-h-screen bg-night flex flex-col pb-cabin-actions">
+    <div className="min-h-screen bg-night flex flex-col">
+      <PageEdges />
       <TopNav email={user?.email ?? null} name={user?.user_metadata?.full_name ?? null} />
 
       {/* The top nav is desktop-only, so below lg the wordmark sits above the
@@ -118,7 +118,7 @@ export default async function CabinPage({
 
         <FieldNotes cabin={cabin} />
       </main>
-      <Footer />
+      <Footer clearance="cabin-actions" />
       <MobileTabBar email={user?.email ?? null} />
     </div>
   );

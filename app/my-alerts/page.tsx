@@ -1,3 +1,4 @@
+import PageEdges from "@/components/ui/page-edges";
 import Link from "next/link";
 import TopNav from "@/components/landing/top-nav";
 import { DeepLinkScroll } from "@/components/alerts/deep-link-scroll";
@@ -151,6 +152,7 @@ export default async function AlertsPage({
 
   return (
     <div className="min-h-screen bg-night flex flex-col">
+      <PageEdges />
       <TopNav email={user?.email ?? null} name={user?.user_metadata?.full_name ?? null} />
       <main className="flex-1 page-container pt-8 lg:pt-12 pb-page">
         <DeepLinkScroll />

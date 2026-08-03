@@ -1,3 +1,4 @@
+import PageEdges from "@/components/ui/page-edges";
 import { Suspense } from "react";
 import { ExploreMap } from "@/components/ui/explore-map";
 import { fetchMapCabins } from "@/lib/cabins";
@@ -12,6 +13,9 @@ export default async function Explore() {
 
   return (
     <div className="fixed inset-0 bg-night">
+      {/* Night at both ends: the map is fixed and non-scrolling, so there is no
+          footer to match — any bounce should stay on the map's own surface. */}
+      <PageEdges bottom="night" />
       {/* ExploreMap reads ?cabin= via useSearchParams. In a prerendered route that
           suspends, and the production build fails without this boundary — it only
           appears to work in dev, where routes render on demand. Keeping the boundary
