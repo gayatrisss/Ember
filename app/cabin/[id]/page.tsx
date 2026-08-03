@@ -64,7 +64,7 @@ export default async function CabinPage({
 
   return (
     <div className="min-h-screen bg-night flex flex-col">
-      <PageEdges />
+      <PageEdges bottomMobile="night" />
       <TopNav email={user?.email ?? null} name={user?.user_metadata?.full_name ?? null} />
 
       {/* The top nav is desktop-only, so below lg the wordmark sits above the

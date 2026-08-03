@@ -17,9 +17,27 @@ type BottomColor = "wax" | "night";
 export default function PageEdges({
   top = "night",
   bottom = "wax",
+  bottomMobile = bottom,
 }: {
   top?: TopColor;
   bottom?: BottomColor;
+  /**
+   * The bottom gutter below `lg`, when it differs. Set this to the colour of the
+   * page's fixed bottom chrome (the mobile tab bar is `night`).
+   *
+   * Structurally the document still ends at the footer, but on iOS a fixed bar
+   * translates with the page during a bounce. If the gutter doesn't match the bar,
+   * the bar appears to lift off a bright sliver — reads as a flicker at the bottom
+   * of the scroll. Matching it makes that movement invisible.
+   */
+  bottomMobile?: BottomColor;
 }) {
-  return <span hidden data-page-top={top} data-page-bottom={bottom} />;
+  return (
+    <span
+      hidden
+      data-page-top={top}
+      data-page-bottom={bottom}
+      data-page-bottom-mobile={bottomMobile}
+    />
+  );
 }

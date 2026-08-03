@@ -18,7 +18,7 @@ export default async function Home() {
 
   return (
     <div>
-      <PageEdges top="evergreen" />
+      <PageEdges top="evergreen" bottomMobile="night" />
       <div className="bg-evergreen bg-page-glow">
         <TopNav email={email} name={name} />
         <Hero />

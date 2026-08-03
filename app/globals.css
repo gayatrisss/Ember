@@ -40,6 +40,21 @@ html:has([data-page-top="evergreen"]) {
 html:has([data-page-bottom="night"]) {
   --edge-bottom: var(--color-night);
 }
+html:has([data-page-bottom="wax"]) {
+  --edge-bottom: var(--color-wax);
+}
+
+/* Below lg, fixed bottom chrome wins over the document's real end. The bar
+   translates with the page during an iOS bounce, so a gutter that doesn't match it
+   shows as a bright sliver under a lifting bar. */
+@variant max-lg {
+  html:has([data-page-bottom-mobile="night"]) {
+    --edge-bottom: var(--color-night);
+  }
+  html:has([data-page-bottom-mobile="wax"]) {
+    --edge-bottom: var(--color-wax);
+  }
+}
 
 body {
   background: var(--color-night);
@@ -47,9 +62,11 @@ body {
   font-family: var(--font-sans);
   line-height: 1.7;
   /* Containing block for the cap, and cover the viewport on short pages so the
-     canvas colour can't show through beneath the content. */
+     canvas colour can't show through beneath the content.
+     svh, not dvh: dvh recalculates on every frame of the iOS toolbar collapse,
+     which is exactly when the bottom of the page is on screen. */
   position: relative;
-  min-height: 100dvh;
+  min-height: 100svh;
 }
 
 body::before {
