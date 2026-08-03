@@ -38,6 +38,14 @@ export default function MobileTabBar({ email }: { email: string | null }) {
       // on paint order alone, since it renders after the page content.
       className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-night pb-safe"
     >
+      {/* Bleed. When the iOS browser toolbar animates in, the visual viewport shrinks
+          and WebKit repositions fixed elements a frame behind the animation — the bar
+          renders momentarily higher than it settles, exposing whatever is behind it
+          (here, the footer's wax clearance) as a bright sliver along the bottom edge.
+          Extending the bar's own night past the viewport edge means that gap is always
+          filled by the bar itself, whatever is behind it. Below the fold at rest, so
+          it never shows on its own and costs no layout. */}
+      <div aria-hidden className="absolute inset-x-0 top-full h-screen bg-night pointer-events-none" />
       <div className="flex items-stretch">
         <Tab
           href="/explore"
