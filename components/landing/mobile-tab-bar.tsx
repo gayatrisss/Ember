@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Bell, Globe, LogOut, User, type LucideIcon } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { useKeyboardOpen } from "@/components/ui/use-keyboard-open";
 
 const supabase = createClient();
 
@@ -13,6 +14,7 @@ const supabase = createClient();
 export default function MobileTabBar({ email }: { email: string | null }) {
   const pathname = usePathname();
   const router = useRouter();
+  const keyboardOpen = useKeyboardOpen();
 
   async function signIn() {
     await supabase.auth.signInWithOAuth({
@@ -29,6 +31,13 @@ export default function MobileTabBar({ email }: { email: string | null }) {
     await supabase.auth.signOut();
     router.refresh();
   }
+
+  // Typing wins the bottom of the screen. iOS pins fixed elements to the visual
+  // viewport, so leaving this mounted parks it on top of the keyboard, over the
+  // very field being filled in. Unmounting rather than hiding is deliberate: the
+  // popover helpers reserve space by measuring [data-tab-bar], so a bar that
+  // isn't there measures nothing and the search results reclaim the room.
+  if (keyboardOpen) return null;
 
   return (
     <nav
