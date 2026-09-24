@@ -615,7 +615,7 @@ export function AvailabilityPanel({
               <span>{effectiveMinNights === 1 ? "opens" : "open"} up in your date range.</span>
             </div>
           }
-          disclaimer="We'll monitor Recreation.gov around the clock and let you know when a cancellation occurs."
+          disclaimer="We'll check Recreation.gov daily and email you when a cancellation opens up."
         />
       );
       cta = (
