@@ -1,0 +1,655 @@
+<title>Ember Case Study</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT,WONK@1,9..144,700,50,1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+  /* Ember lives at night: a deliberate single dark theme, tokens mirror app/theme.css */
+  :root {
+    --night: #0f1510;
+    --evergreen: #1a241b;
+    --ash: #171a17;
+    --ember: #d45a20;
+    --ember-selected: #b24c1b;
+    --ember-range: #803913;
+    --smoke: #5f7a8a;
+    --wax: #ede8dc;
+    --wax-muted: #b2afa6;
+    --wax-70: rgba(237, 232, 220, 0.7);
+    --line: rgba(237, 232, 220, 0.1);
+    --ground: #0a0e0b;
+    --display: "Fraunces", Georgia, "Times New Roman", serif;
+    --sans: "Geist", ui-sans-serif, system-ui, -apple-system, sans-serif;
+    --mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  body {
+    background: var(--ground);
+    color: var(--wax);
+    font-family: var(--sans);
+    font-size: 14px;
+    line-height: 1.55;
+    padding-inline: 16px;
+    padding-block: 40px;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  p { margin: 0; }
+  a { color: inherit; }
+
+  /* ---------- page frame: US Letter landscape at 96dpi ---------- */
+  .page {
+    position: relative;
+    width: 1056px;
+    height: 816px;
+    margin: 0 auto 40px;
+    padding: 52px 64px 44px;
+    background: var(--night);
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+    overflow: hidden;
+    isolation: isolate;
+  }
+  /* grain: "textures sprinkled with grain and character" */
+  .page::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    opacity: 0.07;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .93 0 0 0 0 .91 0 0 0 0 .86 0 0 0 1 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  }
+  .page-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+  }
+  .page-foot {
+    margin-top: auto;
+    display: flex;
+    justify-content: space-between;
+    color: var(--smoke);
+  }
+
+  /* ---------- type (mirrors utilities.css roles) ---------- */
+  .wordmark {
+    font-family: var(--display);
+    font-style: italic;
+    font-weight: 700;
+    font-size: 26px;
+    line-height: 1;
+    color: var(--wax);
+  }
+  .wordmark span { color: var(--ember); }
+  .data {
+    font-family: var(--mono);
+    font-size: 10px;
+    line-height: 1.5;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+  }
+  .eyebrow { color: var(--ember); }
+  .display {
+    font-family: var(--display);
+    font-style: italic;
+    font-weight: 700;
+    font-size: 64px;
+    line-height: 1;
+    letter-spacing: -0.01em;
+    margin: 0;
+    text-wrap: balance;
+  }
+  .title {
+    font-family: var(--display);
+    font-style: italic;
+    font-weight: 700;
+    font-size: 36px;
+    line-height: 1.1;
+    margin: 0;
+    text-wrap: balance;
+  }
+  .heading {
+    font-size: 17px;
+    font-weight: 600;
+    line-height: 1.3;
+    margin: 0;
+  }
+  .lead { font-size: 17px; line-height: 1.5; color: var(--wax); max-width: 60ch; }
+  .muted { color: var(--wax-muted); }
+  .small { font-size: 12.5px; line-height: 1.5; }
+  .stack { display: flex; flex-direction: column; gap: 10px; }
+  .stack-lg { display: flex; flex-direction: column; gap: 20px; }
+  code {
+    font-family: var(--mono);
+    font-size: 0.86em;
+    color: var(--wax);
+    background: rgba(237, 232, 220, 0.06);
+    padding: 1px 5px;
+    border-radius: 4px;
+  }
+
+  /* ---------- image slots for Figma screenshots ---------- */
+  .slot {
+    border: 1px dashed rgba(237, 232, 220, 0.22);
+    border-radius: 14px;
+    background: rgba(26, 36, 27, 0.55);
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    gap: 4px;
+    padding: 16px 18px;
+    color: var(--smoke);
+    min-height: 0;
+  }
+  .slot b { color: var(--wax-muted); font-weight: 500; font-family: var(--sans); font-size: 13px; letter-spacing: 0; text-transform: none; }
+
+  .panel {
+    background: var(--evergreen);
+    border-radius: 16px;
+    padding: 22px 24px;
+  }
+  .rule { border-top: 1px solid var(--line); }
+
+  /* ================= page 1 ================= */
+  .p1 { gap: 0; }
+  .p1::after {
+    /* the one warm light source */
+    content: "";
+    position: absolute;
+    z-index: -1;
+    right: -180px;
+    top: -220px;
+    width: 720px;
+    height: 720px;
+    background: radial-gradient(circle, rgba(212, 90, 32, 0.22), rgba(212, 90, 32, 0) 62%);
+  }
+  .p1-hero {
+    display: grid;
+    grid-template-columns: 1fr 360px;
+    gap: 40px;
+    margin-top: 44px;
+    align-items: stretch;
+  }
+  .p1-hero .stack-lg { justify-content: center; }
+  .p1-hero .slot { height: 270px; }
+  .meta {
+    display: grid;
+    grid-template-columns: repeat(4, auto);
+    justify-content: start;
+    column-gap: 40px;
+    row-gap: 4px;
+    margin-top: 36px;
+    padding-top: 18px;
+  }
+  .meta .data { color: var(--smoke); }
+  .meta .v { font-size: 13px; color: var(--wax); }
+  .meta .v a { color: var(--ember); text-decoration: none; }
+  .three {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 36px;
+    margin-top: 32px;
+  }
+  .three .data { color: var(--ember); }
+  .three p { color: var(--wax-muted); font-size: 13.5px; }
+  .toc {
+    margin-top: auto;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 36px;
+    padding-top: 16px;
+  }
+  .toc div { display: flex; gap: 12px; align-items: baseline; }
+  .toc .data { color: var(--smoke); }
+  .toc span:last-child { font-size: 13px; color: var(--wax); }
+
+  /* ================= page 2 ================= */
+  .two-col {
+    display: grid;
+    grid-template-columns: 400px 1fr;
+    gap: 48px;
+    flex: 1;
+    min-height: 0;
+  }
+  .swatches {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 8px;
+  }
+  .sw { display: flex; flex-direction: column; gap: 6px; }
+  .chip { height: 44px; border-radius: 8px; border: 1px solid var(--line); }
+  .sw .data { color: var(--wax-muted); letter-spacing: 0.06em; }
+  .sw .data i { font-style: normal; color: var(--smoke); display: block; }
+  .specimens { display: flex; flex-direction: column; gap: 10px; }
+  .spec { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+  .spec .data { color: var(--smoke); white-space: nowrap; }
+  .spec-fraunces { font-family: var(--display); font-style: italic; font-weight: 700; font-size: 24px; line-height: 1.1; }
+  .spec-geist { font-size: 16px; }
+  .spec-mono { font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.12em; }
+
+  .loop {
+    display: grid;
+    grid-template-columns: 1fr 34px 1fr;
+    grid-template-rows: auto 34px auto;
+    align-items: stretch;
+  }
+  .node {
+    background: var(--evergreen);
+    border-radius: 14px;
+    padding: 16px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .node .data { color: var(--ember); }
+  .node .heading { font-size: 15px; }
+  .node p { color: var(--wax-muted); font-size: 12.5px; line-height: 1.5; }
+  .node.live { background: transparent; border: 1px solid rgba(212, 90, 32, 0.45); box-shadow: 0 0 28px rgba(212, 90, 32, 0.18); }
+  .arrow {
+    display: grid;
+    place-items: center;
+    color: var(--ember);
+    font-family: var(--mono);
+    font-size: 16px;
+  }
+  .proof {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-top: 20px;
+  }
+  .proof .data { color: var(--smoke); }
+  .proof p { font-size: 12.5px; color: var(--wax-muted); }
+
+  /* ================= page 3 ================= */
+  .p3 { gap: 18px; }
+  .shapes {
+    display: grid;
+    grid-template-columns: 150px 1fr 1fr;
+    font-size: 12.5px;
+  }
+  .shapes > div { padding: 9px 14px 9px 0; border-top: 1px solid var(--line); color: var(--wax-muted); }
+  .shapes .h { border-top: 0; padding-top: 0; }
+  .shapes .h.data { color: var(--ember); }
+  .shapes .k { color: var(--smoke); }
+  .shapes .k.data { padding-top: 11px; }
+  .shapes strong { color: var(--wax); font-weight: 500; }
+  .pipeline {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+  }
+  .step {
+    background: var(--evergreen);
+    border-radius: 14px;
+    padding: 16px 16px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .step .data { color: var(--ember); }
+  .step .heading { font-size: 15px; }
+  .step p { font-size: 12.5px; color: var(--wax-muted); }
+  .props {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 28px;
+  }
+  .props .heading { font-size: 14px; }
+  .props p { font-size: 12.5px; color: var(--wax-muted); }
+  .constraint {
+    border: 1px solid rgba(212, 90, 32, 0.4);
+    border-radius: 14px;
+    padding: 14px 18px;
+    display: grid;
+    grid-template-columns: 150px 1fr;
+    gap: 18px;
+    align-items: baseline;
+  }
+  .constraint .data { color: var(--ember); }
+  .constraint p { font-size: 12.5px; color: var(--wax-muted); }
+
+  /* ================= page 4 ================= */
+  .ia {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 28px;
+    flex: 1;
+    min-height: 0;
+  }
+  .ia > section { display: flex; flex-direction: column; gap: 12px; min-height: 0; }
+  .ia .data.eyebrow { color: var(--ember); }
+  .ia p { font-size: 12.5px; color: var(--wax-muted); }
+  .ia .slot { height: 150px; }
+  .demo {
+    background: var(--evergreen);
+    border-radius: 12px;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .demo .data { color: var(--smoke); }
+  .cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
+  .cal span {
+    height: 26px;
+    border-radius: 7px;
+    display: grid;
+    place-items: center;
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+  }
+  .c-old { color: rgba(237, 232, 220, 0.4); }
+  .c-old-past { color: var(--smoke); }
+  .c-past { color: var(--smoke); }
+  .c-booked { color: var(--wax-muted); }
+  .c-open { color: var(--wax); font-weight: 600; }
+  .c-alert { background: rgba(212, 90, 32, 0.15); }
+  .c-sel { background: var(--ember); color: var(--wax); font-weight: 600; }
+  .legend { display: flex; flex-wrap: wrap; gap: 4px 12px; }
+  .legend .data { color: var(--wax-muted); letter-spacing: 0.06em; display: flex; align-items: center; gap: 5px; }
+  .dot { width: 8px; height: 8px; border-radius: 3px; display: inline-block; }
+  .old-toggle { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+  .old-toggle span { padding: 4px 10px; font-size: 12px; color: var(--smoke); }
+  .old-toggle span:first-child { background: rgba(237, 232, 220, 0.08); color: var(--wax-muted); }
+  .sentence { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 14px; color: var(--wax); }
+  .pill { background: var(--ember); color: var(--wax); border-radius: 8px; padding: 3px 10px; font-weight: 500; }
+  .next {
+    display: grid;
+    grid-template-columns: 150px repeat(3, 1fr);
+    gap: 24px;
+    padding-top: 16px;
+    align-items: baseline;
+  }
+  .next .data { color: var(--ember); }
+  .next p { font-size: 12.5px; color: var(--wax-muted); }
+  .next strong { color: var(--wax); font-weight: 500; }
+
+  /* ---------- screen: narrow viewports stack everything ---------- */
+  @media screen and (max-width: 1100px) {
+    body { padding-block: 16px; }
+    .page { width: auto; height: auto; padding: 32px 22px; margin-bottom: 16px; }
+    .p1-hero, .two-col, .three, .toc, .ia, .props, .pipeline, .proof, .next, .constraint { grid-template-columns: 1fr; }
+    .meta { grid-template-columns: 1fr 1fr; row-gap: 12px; }
+    .loop { grid-template-columns: 1fr; grid-template-rows: none; gap: 8px; }
+    .loop .arrow { display: none; }
+    .shapes { grid-template-columns: 90px 1fr 1fr; }
+    .display { font-size: 44px; }
+    .toc { margin-top: 32px; }
+  }
+
+  /* ---------- print: one page per sheet ---------- */
+  @page { size: 11in 8.5in; margin: 0; }
+  @media print {
+    body { background: var(--night); padding: 0; margin: 0; }
+    .page { margin: 0; break-after: page; }
+    .page:last-child { break-after: auto; }
+    .page::before { display: none; } /* grain rasterizes into a huge PDF */
+  }
+</style>
+
+<!-- ============================ PAGE 1 ============================ -->
+<article class="page p1">
+  <header class="page-head">
+    <div class="wordmark">ember<span>.</span></div>
+    <div class="data" style="color: var(--smoke)">Case study · Design engineering · 2026</div>
+  </header>
+
+  <div class="p1-hero">
+    <div class="stack-lg">
+      <h1 class="display">Refresh less,<br>camp more.</h1>
+      <p class="lead">Ember watches Recreation.gov for cancellations at Forest Service cabins and emails you when your dates open up. I designed and built it on my own, from the brand to the database.</p>
+    </div>
+    <div class="slot data">Image<b>Cabin page with the alert panel open, desktop</b></div>
+  </div>
+
+  <div class="meta rule">
+    <span class="data">Role</span>
+    <span class="data">Timeline</span>
+    <span class="data">Stack</span>
+    <span class="data">Live</span>
+    <span class="v">Design and engineering, solo</span>
+    <span class="v">May 2026 to present</span>
+    <span class="v">Next.js, Supabase, Resend, Mapbox, Vercel</span>
+    <span class="v"><a href="https://ember.gayatrisabne.dev">ember.gayatrisabne.dev</a></span>
+  </div>
+
+  <div class="three">
+    <div class="stack">
+      <span class="data">The problem</span>
+      <p>Forest Service cabins book out months ahead. Plans change and cancellations happen constantly, but an opening is gone within minutes, taken by whoever happened to be refreshing the page.</p>
+    </div>
+    <div class="stack">
+      <span class="data">Who it's for</span>
+      <p>A local adventurer who already found the cabin they want and hit a wall. They'd go this weekend if something opened. Finding the cabin isn't the problem; the dead end after finding it is.</p>
+    </div>
+    <div class="stack">
+      <span class="data">The key decision</span>
+      <p>Don't compete with Recreation.gov. It owns the data and the brand recognition. Ember is a layer on top: the cabin page shows just enough to confirm the place, then gets out of the way of availability and alerts.</p>
+    </div>
+  </div>
+
+  <nav class="toc rule">
+    <div><span class="data">01</span><span>From concept to system</span></div>
+    <div><span class="data">02</span><span>How Ember watches</span></div>
+    <div><span class="data">03</span><span>Information architecture</span></div>
+  </nav>
+</article>
+
+<!-- ============================ PAGE 2 ============================ -->
+<article class="page">
+  <header class="page-head">
+    <span class="data eyebrow">01 · From concept to system</span>
+    <div class="wordmark" style="font-size: 18px">ember<span>.</span></div>
+  </header>
+
+  <div class="two-col">
+    <div class="stack-lg">
+      <h2 class="title">One warm light source</h2>
+      <p class="muted">The name comes from the product's core moment: a cabin opening up after months dark. An ember is what's left when the fire has almost gone out. It's still glowing, and still an opportunity if you move fast.</p>
+      <p class="muted">The product lives at night, on your phone in bed when the alert arrives, so the visual language does too. Every competitor defaults to daylight. On near-black forest green, the same orange family stops being a brand color and becomes a light source, reserved for the most important element on each screen.</p>
+
+      <div class="swatches">
+        <div class="sw"><div class="chip" style="background: var(--night)"></div><span class="data">Night<i>#0F1510</i></span></div>
+        <div class="sw"><div class="chip" style="background: var(--evergreen)"></div><span class="data">Evergreen<i>#1A241B</i></span></div>
+        <div class="sw"><div class="chip" style="background: var(--ember)"></div><span class="data">Ember<i>#D45A20</i></span></div>
+        <div class="sw"><div class="chip" style="background: var(--smoke)"></div><span class="data">Smoke<i>#5F7A8A</i></span></div>
+        <div class="sw"><div class="chip" style="background: var(--wax)"></div><span class="data">Wax<i>#EDE8DC</i></span></div>
+      </div>
+
+      <div class="specimens rule" style="padding-top: 14px">
+        <div class="spec"><span class="spec-fraunces">Trail Creek Cabin</span><span class="data">Fraunces · display only</span></div>
+        <div class="spec"><span class="spec-geist">Alert me when 2 nights open up</span><span class="data">Geist · interface</span></div>
+        <div class="spec"><span class="spec-mono">Sleeps 4 · $45 / night</span><span class="data">Geist Mono · data</span></div>
+      </div>
+    </div>
+
+    <div class="stack-lg">
+      <div class="stack">
+        <h2 class="heading">Figma → code → Figma</h2>
+        <p class="muted small">Figma and the codebase are one system kept in sync both ways. Code isn't the end of a handoff; the build gets written back into the design file.</p>
+      </div>
+
+      <div class="loop">
+        <div class="node">
+          <span class="data">Figma</span>
+          <span class="heading">Variables and styles</span>
+          <p>Color variables, text styles and a four-step spacing rhythm (bonded, grouped, section, major) with mobile and desktop modes.</p>
+        </div>
+        <div class="arrow">→</div>
+        <div class="node">
+          <span class="data">Code</span>
+          <span class="heading">Tokens, locked</span>
+          <p><code>theme.css</code> and <code>utilities.css</code> hold the same names. Components in <code>components/ui</code> use only tokens: no raw hex, no arbitrary px.</p>
+        </div>
+        <div class="arrow">↑</div>
+        <div></div>
+        <div class="arrow">↓</div>
+        <div class="node">
+          <span class="data">Back to Figma</span>
+          <span class="heading">The build, written back</span>
+          <p>13 <code>Ember/*</code> text styles generated from <code>utilities.css</code>, each stamped with its class name. Live screens rebuilt as audit frames.</p>
+        </div>
+        <div class="arrow">←</div>
+        <div class="node live">
+          <span class="data">Live</span>
+          <span class="heading">ember.gayatrisabne.dev</span>
+          <p>Deployed on every push to main. The real product, at real widths, with real data.</p>
+        </div>
+      </div>
+
+      <div class="proof">
+        <div class="stack">
+          <span class="data">Drift it caught</span>
+          <p>Writing styles back from code exposed two older Figma type ramps that had quietly diverged from the build, one of them mixed into the landing frames.</p>
+        </div>
+        <div class="stack">
+          <span class="data">Bugs it caught</span>
+          <p>Auditing the explore page at 393px found the search field squeezed to 120px and the mobile tab bar missing. Neither was visible in the desktop design.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</article>
+
+<!-- ============================ PAGE 3 ============================ -->
+<article class="page p3">
+  <header class="page-head">
+    <span class="data eyebrow">02 · How Ember watches</span>
+    <div class="wordmark" style="font-size: 18px">ember<span>.</span></div>
+  </header>
+
+  <div class="stack">
+    <h2 class="title">Right-size the engineering to the data</h2>
+    <p class="muted" style="max-width: 78ch">Ember has two kinds of data with opposite shapes. That asymmetry, not a framework preference, decided the architecture: cheap data is loaded eagerly, and the expensive data only gets heavy machinery where it earns it.</p>
+  </div>
+
+  <div class="shapes">
+    <div class="h"></div>
+    <div class="h data">Cabin facts</div>
+    <div class="h data">Availability</div>
+
+    <div class="k data">Shape</div>
+    <div><strong>505 cabins</strong> from a one-time data dump. Small (about 30 KB gzipped) and frozen.</div>
+    <div><strong>Live</strong>, per cabin and per month. Only Recreation.gov has it.</div>
+
+    <div class="k data">So</div>
+    <div>The whole set ships to the map once. Panning makes zero cabin requests. The page is cached and rebuilt daily.</div>
+    <div>Fetched on demand when you open a cabin. Showing it across the whole map would take about 500 live calls, so that's deferred.</div>
+
+    <div class="k data">Compare</div>
+    <div>Airbnb fetches per viewport because it has millions of listings. At 505, loading everything is simpler and feels faster.</div>
+    <div>Alerts are the one place that has to read live availability on a schedule. That's the pipeline below.</div>
+  </div>
+
+  <div class="stack">
+    <span class="data" style="color: var(--smoke)">The alert check</span>
+    <div class="pipeline">
+      <div class="step">
+        <span class="data">1 · Trigger</span>
+        <span class="heading">Scheduled cron</span>
+        <p>Vercel runs the check daily and authenticates with a shared secret, so nobody else can fire it.</p>
+      </div>
+      <div class="step">
+        <span class="data">2 · Check</span>
+        <span class="heading">Find openings</span>
+        <p>Groups alerts by cabin, fetches each month once, then finds runs of at least N open nights in each alert's dates. Reads only.</p>
+      </div>
+      <div class="step">
+        <span class="data">3 · Send</span>
+        <span class="heading">Claim, then email</span>
+        <p>Claims a row guarded by a unique constraint, then emails through Resend. An opening already sent is skipped.</p>
+      </div>
+      <div class="step">
+        <span class="data">4 · Report</span>
+        <span class="heading">Count outcomes</span>
+        <p>Sent, duplicate and failed are tallied separately, so a broken write is never mistaken for a duplicate.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="props">
+    <div class="stack">
+      <span class="heading">Ten watchers, one request</span>
+      <p>Fetches are batched per cabin, so popular cabins don't multiply load on Recreation.gov.</p>
+    </div>
+    <div class="stack">
+      <span class="heading">Safe to rerun</span>
+      <p>The database, not the code, guarantees each opening is emailed once. A retry or a manual run can't double-send.</p>
+    </div>
+    <div class="stack">
+      <span class="heading">Tested without a network</span>
+      <p>Check and send are separate modules that take their I/O as inputs, so both are unit-tested with fakes.</p>
+    </div>
+  </div>
+
+  <div class="constraint">
+    <span class="data">A known limit</span>
+    <p>Checks run once a day because Vercel's free tier caps crons at daily. Nothing in the pipeline assumes that; on a paid plan it would run every 15 minutes. A dev trigger forces a run for demos.</p>
+  </div>
+</article>
+
+<!-- ============================ PAGE 4 ============================ -->
+<article class="page">
+  <header class="page-head">
+    <span class="data eyebrow">03 · Information architecture</span>
+    <div class="wordmark" style="font-size: 18px">ember<span>.</span></div>
+  </header>
+
+  <h2 class="title">Three calls about structure</h2>
+
+  <div class="ia">
+    <section>
+      <span class="data eyebrow">Browse · Map first</span>
+      <span class="heading">A full-screen map, not a split list</span>
+      <p>Airbnb's 50/50 split works when there are 200 results in a few blocks and you need a list to compare. Cabins on public land are sparse. People orient by place first: which trails, is there a lake. So the map takes the whole screen and the cabin card floats on it, a move borrowed from AllTrails.</p>
+      <p>It's also the one light surface in a dark product. Light is for scanning a landscape; dark is for focusing on a decision.</p>
+      <div class="slot data" style="flex: 1">Image<b>Explore page, full-screen map with a cabin card open</b></div>
+    </section>
+
+    <section>
+      <span class="data eyebrow">Calendar · Cell states</span>
+      <span class="heading">Availability was shown by dimming</span>
+      <p>Most nights at a popular cabin are booked, so most cells rendered dim and the calendar looked dead. Worse, booked nights you could tap were dimmer than past days you couldn't.</p>
+      <div class="demo">
+        <span class="data">Before</span>
+        <div class="cal">
+          <span class="c-old-past">7</span><span class="c-old-past">8</span><span class="c-old">9</span><span class="c-old">10</span><span class="c-old">11</span><span class="c-open">12</span><span class="c-old">13</span>
+        </div>
+        <span class="data">After</span>
+        <div class="cal">
+          <span class="c-past">7</span><span class="c-past">8</span><span class="c-booked c-alert">9</span><span class="c-booked c-alert">10</span><span class="c-booked">11</span><span class="c-open">12</span><span class="c-sel">13</span>
+        </div>
+        <div class="legend">
+          <span class="data"><i class="dot" style="background: var(--smoke)"></i>Past</span>
+          <span class="data"><i class="dot" style="background: var(--wax-muted)"></i>Booked</span>
+          <span class="data"><i class="dot" style="background: var(--wax)"></i>Open</span>
+          <span class="data"><i class="dot" style="background: rgba(212,90,32,.35)"></i>Alert set</span>
+          <span class="data"><i class="dot" style="background: var(--ember)"></i>Selected</span>
+        </div>
+      </div>
+      <p>I split it into two channels. Brightness means availability, and only the past is truly dim. Ember means your alert or your selection. No borders anywhere.</p>
+    </section>
+
+    <section>
+      <span class="data eyebrow">Alerts · Minimum nights</span>
+      <span class="heading">A toggle that couldn't say what people meant</span>
+      <div class="demo">
+        <span class="data">Before</span>
+        <div><span class="old-toggle"><span>Strict</span><span>± 7 days</span></span></div>
+        <span class="data">After</span>
+        <div class="sentence"><span>Alert me when at least</span><span class="pill">2 nights ⌄</span><span>open up in your date range.</span></div>
+      </div>
+      <p>People wanted "any night this fall would do." Strict required the whole range to open, which never happens for a broad window. I tried a stepper, a segmented control and a sentence in Figma. The sentence won: it explains the model as you read it, and it scales from 1 night to 90.</p>
+      <p>The schema change shipped expand, migrate, contract, so the live app never ran against a database it didn't understand.</p>
+    </section>
+  </div>
+
+  <div class="next rule">
+    <span class="data">What's next</span>
+    <p><strong>Describe a trip, not a cabin.</strong> A national forest, drive-in, sleeps four, any weekend in July, and Ember watches everything that matches.</p>
+    <p><strong>Book it for them.</strong> The hardest version, and the one that makes Ember feel like a friend watching Recreation.gov for you.</p>
+    <p><strong>Smaller gaps.</strong> A way back from alert setup to the calendar, and one digest email when a broad alert finds many openings.</p>
+  </div>
+</article>
